@@ -1,0 +1,20 @@
+"gui" {
+	"texture_id" : "0" ,
+	"font" : "xscale"
+}
+"GameOver" {
+	"id" : "0" ,
+	"file" : "game_over" 
+}
+"MainMenu" {
+	"id" : "1" ,
+	"file" : "main_menu" 
+}
+"Credits" {
+	"id" : "2" ,
+	"file" : "credits" 
+}
+"Highscores" {
+	"id" : "3" ,
+	"file" : "highscores" 
+}

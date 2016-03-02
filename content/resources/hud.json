@@ -1,0 +1,81 @@
+"image" {
+	"id" : "0" ,
+	"position" : "150,650" ,
+	"rect" : "480,0,240,100"
+}
+"image" {
+	"id" : "1" ,
+	"position" : "150,500" ,
+	"rect" : "480,0,240,100"
+}
+"image" {
+	"id" : "2" ,
+	"position" : "150,350" ,
+	"rect" : "480,0,240,100"
+}
+"image" {
+	"id" : "3" ,
+	"position" : "880,650" ,
+	"rect" : "480,0,240,100"
+}
+"image" {
+	"id" : "4" ,
+	"position" : "880,500" ,
+	"rect" : "480,0,240,100"
+}
+"counter" {
+	"id" : "0" ,
+	"length" : "6" ,
+	"position" : "80,620" ,
+	"color" : "180,70,0,255"
+}
+"counter" {
+	"id" : "1" ,
+	"length" : "3" ,
+	"position" : "130,470" ,
+	"color" : "180,70,0,255"
+}
+"timer" {
+	"id" : "0" ,
+	"position" : "830,625" ,
+	"color" : "180,70,0,255"
+}
+"text" {
+	"id" : "5" ,
+	"text" : "Points" ,
+	"position" : "90,660" 
+}
+"text" {
+	"id" : "3" ,
+	"text" : "Moves" ,
+	"position" : "95,510" 
+}
+"text" {
+	"id" : "6" ,
+	"text" : "Best Move" ,
+	"position" : "50,360" 
+}
+"counter" {
+	"id" : "2" ,
+	"length" : "2" ,
+	"position" : "130,320" ,
+	"color" : "180,70,0,255"
+}
+"text" {
+	"id" : "4" ,
+	"text" : "Time" ,
+	"position" : "840,660" 
+}
+"text" {
+	"id" : "7" ,
+	"text" : "Occupied" ,
+	"position" : "790,510" 
+}
+"text" {
+	"id" : "8" ,
+	"text" : "10%" ,
+	"position" : "850,470" ,
+	"color" : "180,70,0,255" 
+}
+
+

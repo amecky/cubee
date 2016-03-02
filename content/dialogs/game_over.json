@@ -1,0 +1,37 @@
+"dialog" { 
+	"name" : "GameOverDialog" 
+}
+"image" {
+	"id" : "0" , "pos" : "100,650" , "rect" : "870,0,642,65" 
+}
+"text" { 
+	"id" : "0" , "pos" : "360,520" , "text" : "Points:" , "centered" : "false" , "scale" : "1.25"
+}
+"text" { 
+	"id" : "1" , "pos" : "540,520" , "text" : "012324" , "centered" : "false" , "scale" : "1.25"
+}
+"text" { 
+	"id" : "2" , "pos" : "405,470" , "text" : "Time:" , "centered" : "false" , "scale" : "1.25"
+}
+"text" { 
+	"id" : "3" , "pos" : "540,470" , "text" : "01:30" ,  "centered" : "false" , "scale" : "1.25"
+}
+"text" { 
+	"id" : "4" , "pos" : "355,420" , "text" : "Moves:" , "centered" : "false" , "scale" : "1.25"
+}
+"text" { 
+	"id" : "5" , "pos" : "540,420" , "text" : "32%" ,  "centered" : "false" , "scale" : "1.25"
+}
+"text" { 
+	"id" : "6" , "pos" : "250,370" , "text" : "Best Move:" , "centered" : "false" , "scale" : "1.25"
+}
+"text" { 
+	"id" : "7" , "pos" : "540,370" , "text" : "32" ,  "centered" : "false" , "scale" : "1.25"
+}
+
+"button" { 
+	"id" : "0" , "pos" : "400,280" , "text" : "Restart" , "rect" : "710,0,400,60" 
+}
+"button" { 
+	"id" : "1" , "pos" : "400,150" , "text" : "Main Menu" , "rect" : "640,0,400,60" 
+}

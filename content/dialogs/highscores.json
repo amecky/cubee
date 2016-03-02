@@ -1,0 +1,60 @@
+"image" {
+	"id" : "0" , "pos" : "200,660" , "rect" : "650,430,556,50" 
+}
+"button" { 
+	"id" : "1" , "pos" : "400,180" , "text" : "Main Menu" , "rect" : "640,0,400,60" 
+}
+"text" {
+	"id" : "2" , "pos" : "150,550" , "text" : "1." , "centered" : "false"
+}
+"text" {
+	"id" : "3" , "pos" : "150,500" , "text" : "2." , "centered" : "false"
+}
+"text" {
+	"id" : "4" , "pos" : "150,450" , "text" : "3." , "centered" : "false"
+}
+"text" {
+	"id" : "5" , "pos" : "150,400" , "text" : "4." , "centered" : "false"
+}
+"text" {
+	"id" : "6" , "pos" : "150,350" , "text" : "5." , "centered" : "false"
+}
+"text" {
+	"id" : "7" , "pos" : "150,300" , "text" : "6." , "centered" : "false"
+}
+"text" {
+	"id" : "10" , "pos" : "200,550" , "text" : "John Doe and family" , "centered" : "false"
+}
+"text" {
+	"id" : "11" , "pos" : "200,500" , "text" : "John Doe and family" , "centered" : "false"
+}
+"text" {
+	"id" : "12" , "pos" : "200,450" , "text" : "John Doe and family" , "centered" : "false"
+}
+"text" {
+	"id" : "13" , "pos" : "200,400" , "text" : "John Doe and family" , "centered" : "false"
+}
+"text" {
+	"id" : "14" , "pos" : "200,350" , "text" : "John Doe and family" , "centered" : "false"
+}
+"text" {
+	"id" : "15" , "pos" : "200,300" , "text" : "John Doe and family" , "centered" : "false"
+}
+"text" {
+	"id" : "20" , "pos" : "700,550" , "text" : "000000" , "centered" : "false"
+}
+"text" {
+	"id" : "21" , "pos" : "700,500" , "text" : "000000" , "centered" : "false"
+}
+"text" {
+	"id" : "22" , "pos" : "700,450" , "text" : "000000" , "centered" : "false"
+}
+"text" {
+	"id" : "23" , "pos" : "700,400" , "text" : "000000" , "centered" : "false"
+}
+"text" {
+	"id" : "24" , "pos" : "700,350" , "text" : "000000" , "centered" : "false"
+}
+"text" {
+	"id" : "25" , "pos" : "700,300" , "text" : "000000" , "centered" : "false"
+}
