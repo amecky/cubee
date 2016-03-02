@@ -2,10 +2,18 @@
 #include <math\GameMath.h>
 #include <utils\Log.h>
 #include <sprites\SpriteBatch.h>
+#include <renderer\graphics.h>
 
 v2 convert(int gx, int gy) {
 	return v2(START_X + gx * CELL_SIZE, START_Y + gy * CELL_SIZE);
 }
+
+Point convert(const v2& screenPos) {
+	int x = (screenPos.x - START_X + CELL_SIZE / 2) / CELL_SIZE;
+	int y = (screenPos.y - START_Y + CELL_SIZE / 2) / CELL_SIZE;
+	return Point(x, y);
+}
+
 // -------------------------------------------------------
 // Grid
 // -------------------------------------------------------
@@ -43,16 +51,19 @@ void Bucket::init() {
 	m_FirstSelection.texture = ds::math::buildTexture(SELECTION_RECT);
 
 }
-/*
+
 // -------------------------------------------------------
 // Clear grid
 // -------------------------------------------------------
 void Bucket::clear() {
 	for ( int x = 0; x < GRID_SX; ++x ) {
-		m_Refill[x].setID(-1);		
+		if (_refill[x] != ds::INVALID_SID) {
+			_world->remove(_refill[x]);
+		}
 	}
+	// FIXME: remove everything from _world
 	m_Grid.clear();
-	m_FirstSelection.setActive(false);
+	//m_FirstSelection.setActive(false);
 	m_Mode = BK_RUNNING;
 	m_Filled = 0;
 }
@@ -60,7 +71,7 @@ void Bucket::clear() {
 // -------------------------------------------------------
 // Fill entire grid
 // -------------------------------------------------------
-*/
+
 void Bucket::fill(int minCol,int maxCol) {
 	for ( int x = 0; x < GRID_SX; ++x ) {
 		int pieces = ds::math::random(minCol,maxCol);
@@ -81,7 +92,6 @@ void Bucket::fillRow(int row,int pieces) {
 		m_Grid.set(row,y,entry);
 	}
 }
-/*
 // -------------------------------------------------------
 // Is row full
 // -------------------------------------------------------
@@ -94,7 +104,6 @@ bool Bucket::isRowFull(int row) {
 	}
 	return cnt == 0;
 }
-*/
 // -------------------------------------------------------
 // Move row upwards
 // -------------------------------------------------------
@@ -130,13 +139,13 @@ bool Bucket::refill(int pieces,bool move) {
 			v2 e = convert(i, 0);
 			_world->moveTo(entry.sid, s, e, 0.5f, 0, tweening::easeInOutQuad);
 			// if row is full we cannot refill and game is over
-			//if (isRowFull(i)) {
+			if (isRowFull(i)) {
 				LOG << "Row " << i << " is full";
 				//RowFullEvent evn;
 				//evn.row = i;
 				//getEvents().add(1,&evn,sizeof(RowFullEvent));
-				//return false;
-			//}
+				return false;
+			}
 			
 			//m_MovingCells->addRefill(i,node->getID());		
 		}
@@ -171,10 +180,22 @@ void Bucket::calculateFillRate() {
 	LOG << "percentage " << percentage;
 	m_PercentFilled = static_cast<int>(percentage);
 }
-/*
+
 // -------------------------------------------------------
 // Update
 // -------------------------------------------------------
+void Bucket::update(float elapsed) {
+	v2 mp = ds::renderer::getMousePosition();
+	Point p = convert(mp);
+	if (isValid(p)) {
+		LOG << "Point: " << p.x << " " << p.y << " mouse: " << DBG_V2(mp);
+	}	
+	if (isValid(p.x,p.y) && isUsed(p.x, p.y)) {		
+		const GridEntry& entry = m_Grid.get(p.x, p.y);
+		_world->scaleTo(entry.sid, v2(1, 1), v2(2, 2), 0.5f, 0, tweening::easeSinus);
+	}
+}
+/*
 void Bucket::update(float elapsed) {
 	if ( m_Mode == BK_REFILLING ) {
 		m_MovingCells->update(elapsed);
@@ -209,28 +230,6 @@ void Bucket::update(float elapsed) {
 }
 */
 // -------------------------------------------------------
-// Draw
-// -------------------------------------------------------
-void Bucket::render() {
-	int offset = -1;
-	/*
-	m_MovingCells->render();
-
-	m_Renderer->draw(m_FirstSelection);
-
-	if ( m_Mode == BK_GLOWING ) {
-		float a = sin(m_GlowTimer/FLASH_TTL) * 0.8f;
-		for ( size_t i = 0; i < m_Highlights.size(); ++i ) {
-			ds::Color* clr = m_Highlights[i].getColorPtr();
-			clr->a = 1.0f - a;
-			m_Highlights[i].setScale(Vector2f(1.0f + a*0.3f,1.0f +a*0.3f));
-			m_Renderer->draw(m_Highlights[i]);
-		}
-	}
-	*/
-}
-
-// -------------------------------------------------------
 // Draw grid
 // -------------------------------------------------------
 void Bucket::drawGrid() {
@@ -240,6 +239,19 @@ void Bucket::drawGrid() {
 	}
 	ds::sprites::draw(m_TopBar);
 	ds::sprites::draw(m_BottomBar);
+}
+
+// -------------------------------------------------------
+// is valid position
+// -------------------------------------------------------
+const bool Bucket::isValid(const Point& p) const {
+	if (p.x < 0 || p.x >= GRID_SX) {
+		return false;
+	}
+	if (p.y < 0 || p.y >= GRID_SY) {
+		return false;
+	}
+	return true;
 }
 
 // -------------------------------------------------------

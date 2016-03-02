@@ -5,9 +5,18 @@
 #include <sprites\Sprite.h>
 #include "GameContext.h"
 
+struct Point {
+	int x;
+	int y;
+	Point() : x(0), y(0) {}
+	Point(int _x, int _y) : x(_x), y(_y) {}
+};
+
 struct GridEntry {
 	ds::SID sid;
 	int color;
+
+	GridEntry() : sid(ds::INVALID_SID), color(0) {}
 };
 // -------------------------------------------------------
 // ColorGrid
@@ -42,22 +51,20 @@ public:
 	Bucket(GameContext* context);
 	~Bucket();
 	void init();
-	//void clear();
-	//void update(float elapsed);
-	void render();
+	void clear();
+	void update(float elapsed);
 	void drawGrid();
 	void fillRow(int row,int pieces);
 	void fill(int minCol,int maxCol);
 	bool refill(int pieces,bool move = true);
 	int selectCell(const Vector2f& mousePos);
 	void moveRow(int row);
-	/*
 	bool isRowFull(int row);
 	const int getOccupied() const {
 		return m_PercentFilled;
 	}
-	*/
 private:	
+	const bool isValid(const Point& p) const;
 	const bool isValid(int x, int y) const;
 	const bool isUsed(int x, int y) const;
 	int swapCells(int fx, int fy, int sx, int sy);

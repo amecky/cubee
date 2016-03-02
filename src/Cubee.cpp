@@ -58,6 +58,7 @@ void Cubee::restart() {
 // Update
 // -------------------------------------------------------
 void Cubee::update(float dt) {
+	_bucket->update(dt);
 	//if ( m_Bucket.hasEvents()) {		
 		//stopGame();
 	//}
