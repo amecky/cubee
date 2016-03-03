@@ -12,6 +12,16 @@ struct Point {
 	Point(int _x, int _y) : x(_x), y(_y) {}
 };
 
+inline bool operator==(const Point& first, const Point& second) {
+	return first.x == second.x && first.y == second.y;
+}
+
+inline bool operator!=(const Point& first, const Point& second) {
+	return first.x != second.x || first.y != second.y;
+}
+
+const Point INVALID_POINT = Point(-1, -1);
+
 struct GridEntry {
 	ds::SID sid;
 	int color;
@@ -43,9 +53,9 @@ enum BucketMode {
 	BK_REFILLING
 };
 
-typedef std::vector<ds::DroppedCell> RemovedCells;
+typedef ds::Array<ds::DroppedCell> RemovedCells;
 typedef std::vector<ds::Sprite> Highlights;
-typedef std::vector<ds::GridPoint> Points;
+typedef ds::Array<ds::GridPoint> Points;
 
 public:
 	Bucket(GameContext* context);
@@ -57,7 +67,7 @@ public:
 	void fillRow(int row,int pieces);
 	void fill(int minCol,int maxCol);
 	bool refill(int pieces,bool move = true);
-	int selectCell(const Vector2f& mousePos);
+	int selectCell();
 	void moveRow(int row);
 	bool isRowFull(int row);
 	const int getOccupied() const {
@@ -67,6 +77,7 @@ private:
 	const bool isValid(const Point& p) const;
 	const bool isValid(int x, int y) const;
 	const bool isUsed(int x, int y) const;
+	const bool isUsed(const Point& p) const;
 	int swapCells(int fx, int fy, int sx, int sy);
 	int findMatching(int gx,int gy);
 	void calculateFillRate();
@@ -81,7 +92,7 @@ private:
 	
 	RemovedCells m_RemovedCells;
 	ds::SID _selection;
-	ds::SID _selectedEntry;
+	Point _selectedEntry;
 	Point _lastUpdate;
 
 	ColorGrid m_Grid;

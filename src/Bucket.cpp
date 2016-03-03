@@ -48,7 +48,7 @@ void Bucket::init() {
 	m_TopBar.texture = ds::math::buildTexture(ds::Rect(190, 0, 400, 10));
 
 	_selection = _world->create(v2(START_X,START_Y),ds::math::buildTexture(SELECTION_RECT));
-	_selectedEntry = ds::INVALID_SID;
+	_selectedEntry = INVALID_POINT;
 }
 
 // -------------------------------------------------------
@@ -194,6 +194,22 @@ void Bucket::update(float elapsed) {
 			_world->startBehavior(entry.sid, "wiggle_scale");
 		}
 	}
+	if (m_Mode == BK_GLOWING) {
+		m_GlowTimer += elapsed;
+		if (m_GlowTimer > FLASH_TTL) {
+			m_Mode = BK_MOVING;
+			m_Grid.remove(m_Points);
+			m_RemovedCells.clear();
+			m_Highlights.clear();
+			m_Grid.dropCells(m_RemovedCells);
+			for (size_t i = 0; i < m_RemovedCells.size(); ++i) {
+				const ds::DroppedCell& dc = m_RemovedCells[i];
+				// FIXME: move down
+				//m_MovingCells->add(dc->to.x, dc->to.y, dc->from.x, dc->from.y);
+			}
+			m_Points.clear();
+		}
+	}
 }
 /*
 void Bucket::update(float elapsed) {
@@ -212,21 +228,7 @@ void Bucket::update(float elapsed) {
 		}
 	}	
 
-	if ( m_Mode == BK_GLOWING ) {
-		m_GlowTimer += elapsed;
-		if ( m_GlowTimer > FLASH_TTL ) {
-			m_Mode = BK_MOVING;
-			m_Grid.remove(m_Points);
-			m_RemovedCells.clear();
-			m_Highlights.clear();
-			m_Grid.dropCells(m_RemovedCells);
-			for ( size_t i = 0; i < m_RemovedCells.size(); ++i ) {
-				ds::DroppedCell* dc = &m_RemovedCells[i];
-				m_MovingCells->add(dc->to.x,dc->to.y,dc->from.x,dc->from.y);
-			}				
-			m_Points.clear();			
-		}
-	}	
+	
 }
 */
 // -------------------------------------------------------
@@ -275,84 +277,85 @@ const bool Bucket::isUsed(int x,int y) const {
 }
 
 // -------------------------------------------------------
+// is used
+// -------------------------------------------------------
+const bool Bucket::isUsed(const Point& p) const {
+	return !m_Grid.isFree(p.x, p.y);
+}
+
+// -------------------------------------------------------
 // Swap cells
 // -------------------------------------------------------
 int Bucket::swapCells(int fx,int fy,int sx,int sy) {	
-	return 0;
-	/*
-	ds::Sprite org = m_Grid(fx,fy);
+	const GridEntry& org = m_Grid(fx,fy);
 	m_Grid.set(fx,fy,m_Grid(sx,sy));
 	m_Grid.set(sx,sy,org);
-	m_Highlights.clear();
+	//m_Highlights.clear();
 	m_Points.clear();
 	int total = findMatching(fx,fy);
 	total += findMatching(sx,sy);	
 	if ( total == 0 ) {		
 		// not allowed - swap back
-		org = m_Grid(fx,fy);
+		const GridEntry& tmp = m_Grid(fx,fy);
 		m_Grid.set(fx,fy,m_Grid(sx,sy));
-		m_Grid.set(sx,sy,org);
+		m_Grid.set(sx,sy,tmp);
 	}
 	return total;
-	*/
 }
 
 int Bucket::findMatching(int gx,int gy) {
 	int total = 0;
-	/*
 	ds::Array<ds::GridPoint> points;
 	m_Grid.findMatchingNeighbours(gx,gy,points);
 	if ( points.size() > 2 ) {
 		total += points.size();
 		for ( size_t i = 0; i < points.size(); ++i ) {
-			ds::GridPoint* gp = &points[i];
-			const ds::Sprite& c = m_Grid.get(gp->x,gp->y);
+			const ds::GridPoint& gp = points[i];
+			const GridEntry& c = m_Grid.get(gp.x,gp.y);
 			ds::Sprite h;
 			h.texture = ds::math::buildTexture(ds::Rect(80,300,58,58));
-			h.position = v2(START_X + gp->x * CELL_SIZE,START_Y + gp->y * CELL_SIZE);					
-			h.color = COLOR_ARRAY[c.type];
+			h.position = v2(START_X + gp.x * CELL_SIZE,START_Y + gp.y * CELL_SIZE);					
+
+			h.color = COLOR_ARRAY[c.color];
 			m_Highlights.push_back(h);
 			m_Points.push_back(points[i]);
+
+			_world->scaleTo(c.sid, v2(1, 1), v2(0.1f, 0.1f), 0.2f);
 		}
 	}
-	*/
 	return total;
 }
 
 // -------------------------------------------------------
 // Select cell
 // -------------------------------------------------------
-int Bucket::selectCell(const Vector2f& mousePos) {
+int Bucket::selectCell() {
 	int ret = -1;
-	if ( m_Mode == BK_RUNNING ) {		
-		int x = (mousePos.x - START_X + 20) / CELL_SIZE;
-		int my = 768 - mousePos.y;
-		int y = (my - START_Y + 20) / CELL_SIZE;
-		LOG << "picking at " << x << " " << y;
-		/*
-		if ( isValid(x,y) && isUsed(x,y)) {
-			if ( _selectedEntry == ds::INVALID_SID ) {			
-
-				m_FirstSelection.setPosition(Vector2f(START_X + x * CELL_SIZE,START_Y + y * CELL_SIZE));
-				m_FirstSelection.setTarget(Vector2f(x,y));
-				m_FirstSelection.setActive(true);
+	v2 mp = ds::renderer::getMousePosition();
+	Point p = convert(mp);
+	//if ( m_Mode == BK_RUNNING ) {		
+		if ( isValid(p) && isUsed(p)) {
+			if (_selectedEntry == INVALID_POINT) {
+				_selectedEntry = p;
+				// FIXME: show selection
+				//m_FirstSelection.setPosition(Vector2f(START_X + x * CELL_SIZE,START_Y + y * CELL_SIZE));
+				//m_FirstSelection.setTarget(Vector2f(x,y));
 			}		
 			else {
-				ret = swapCells(x,y,m_FirstSelection.getTarget().x,m_FirstSelection.getTarget().y);
+				ret = swapCells(p.x,p.y,_selectedEntry.x,_selectedEntry.y);
 				if ( ret > 0 ) {
 					m_GlowTimer = 0.0f;
 					m_Mode = BK_GLOWING;
 				}
-				m_FirstSelection.setActive(false);
+				_selectedEntry = INVALID_POINT;
 			}
 		}
 		else {
-			_selectedEntry = ds::INVALID_SID;
+			_selectedEntry = INVALID_POINT;
 		}
-		*/
-	}
-	else {
-		LOG << "not running";
-	}
+	//}
+	//else {
+		//LOG << "not running";
+	//}
 	return ret;
 }

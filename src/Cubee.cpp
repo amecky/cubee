@@ -126,7 +126,7 @@ void Cubee::stopGame() {
 // -------------------------------------------------------
 void Cubee::OnButtonUp( int button,int x,int y ) {
 	if ( m_Mode == GM_RUNNING ) {
-		int points = _bucket->selectCell(Vector2f(x, y));
+		int points = _bucket->selectCell();
 		++m_Score.moves;
 		/*
 		m_HUD.setCounterValue(1,m_Score.moves);
