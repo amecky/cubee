@@ -47,9 +47,8 @@ void Bucket::init() {
 	m_TopBar.position = v2(512,START_Y + GRID_SY * CELL_SIZE - 15);
 	m_TopBar.texture = ds::math::buildTexture(ds::Rect(190, 0, 400, 10));
 
-	m_FirstSelection.position = v2(START_X,START_Y);
-	m_FirstSelection.texture = ds::math::buildTexture(SELECTION_RECT);
-
+	_selection = _world->create(v2(START_X,START_Y),ds::math::buildTexture(SELECTION_RECT));
+	_selectedEntry = ds::INVALID_SID;
 }
 
 // -------------------------------------------------------
@@ -66,6 +65,7 @@ void Bucket::clear() {
 	//m_FirstSelection.setActive(false);
 	m_Mode = BK_RUNNING;
 	m_Filled = 0;
+	_lastUpdate = Point(-1, -1);
 }
 
 // -------------------------------------------------------
@@ -187,12 +187,12 @@ void Bucket::calculateFillRate() {
 void Bucket::update(float elapsed) {
 	v2 mp = ds::renderer::getMousePosition();
 	Point p = convert(mp);
-	if (isValid(p)) {
-		LOG << "Point: " << p.x << " " << p.y << " mouse: " << DBG_V2(mp);
-	}	
 	if (isValid(p.x,p.y) && isUsed(p.x, p.y)) {		
-		const GridEntry& entry = m_Grid.get(p.x, p.y);
-		_world->scaleTo(entry.sid, v2(1, 1), v2(2, 2), 0.5f, 0, tweening::easeSinus);
+		if (p.x != _lastUpdate.x || p.y != _lastUpdate.y) {
+			_lastUpdate = p;
+			const GridEntry& entry = m_Grid.get(p.x, p.y);
+			_world->startBehavior(entry.sid, "wiggle_scale");
+		}
 	}
 }
 /*
@@ -331,7 +331,8 @@ int Bucket::selectCell(const Vector2f& mousePos) {
 		LOG << "picking at " << x << " " << y;
 		/*
 		if ( isValid(x,y) && isUsed(x,y)) {
-			if ( !m_FirstSelection.isActive() ) {			
+			if ( _selectedEntry == ds::INVALID_SID ) {			
+
 				m_FirstSelection.setPosition(Vector2f(START_X + x * CELL_SIZE,START_Y + y * CELL_SIZE));
 				m_FirstSelection.setTarget(Vector2f(x,y));
 				m_FirstSelection.setActive(true);
@@ -346,7 +347,7 @@ int Bucket::selectCell(const Vector2f& mousePos) {
 			}
 		}
 		else {
-			m_FirstSelection.setActive(false);
+			_selectedEntry = ds::INVALID_SID;
 		}
 		*/
 	}

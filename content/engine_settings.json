@@ -30,5 +30,5 @@ init_actions {
 	load_particles : false
 	load_sprite_templates : false
 	initialize_editor : false
-	load_behaviors : false
+	load_behaviors : true
 }

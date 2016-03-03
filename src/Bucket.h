@@ -80,7 +80,10 @@ private:
 	Points m_Points;
 	
 	RemovedCells m_RemovedCells;
-	ds::Sprite m_FirstSelection;
+	ds::SID _selection;
+	ds::SID _selectedEntry;
+	Point _lastUpdate;
+
 	ColorGrid m_Grid;
 	BucketMode m_Mode;
 	bool m_Refilling;
