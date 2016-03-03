@@ -204,8 +204,11 @@ void Bucket::update(float elapsed) {
 			m_Grid.dropCells(m_RemovedCells);
 			for (size_t i = 0; i < m_RemovedCells.size(); ++i) {
 				const ds::DroppedCell& dc = m_RemovedCells[i];
-				// FIXME: move down
-				//m_MovingCells->add(dc->to.x, dc->to.y, dc->from.x, dc->from.y);
+				const GridEntry& org = m_Grid.get(dc.from.x, dc.from.y);
+				v2 p = _world->getPosition(org.sid);
+				_world->moveTo(org.sid, convert(dc.from.x,dc.from.y), convert(dc.to.x,dc.to.y), 0.4f);
+				const GridEntry& old = m_Grid.get(dc.to.x, dc.to.y);
+				_world->remove(old.sid);
 			}
 			m_Points.clear();
 		}
