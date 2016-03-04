@@ -77,6 +77,7 @@ private:
 	ds::Point _selectedEntry;
 	ds::Point _lastUpdate;
 	float _timer;
+	float _currentTTL;
 	ds::SID _selection;
 	ds::Point _firstSwapPoint;
 	ds::Point _secondSwapPoint;

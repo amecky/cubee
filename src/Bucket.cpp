@@ -181,6 +181,8 @@ void Bucket::calculateFillRate() {
 	m_PercentFilled = static_cast<int>(percentage);
 }
 
+
+
 // -------------------------------------------------------
 // Update
 // -------------------------------------------------------
@@ -214,7 +216,7 @@ void Bucket::update(float elapsed) {
 				const GridEntry& org = m_Grid.get(dc.from.x, dc.from.y);
 				LOG << i << " => dropped from " << dc.from.x << " " << dc.from.y << " to " << dc.to.x << " " << dc.to.y << " org: " << org.sid;
 				v2 p = _world->getPosition(org.sid);
-				_world->moveTo(org.sid, convert(dc.from.x,dc.from.y), convert(dc.to.x,dc.to.y), 0.4f);
+				_world->moveTo(org.sid, convert(dc.from.x,dc.from.y), convert(dc.to.x,dc.to.y), _context->settings->moveTTL);
 			}
 			m_Points.clear();
 			_timer = 0.0f;
@@ -223,7 +225,7 @@ void Bucket::update(float elapsed) {
 	}
 	else if (m_Mode == BK_MOVING) {
 		_timer += elapsed;
-		if (_timer > FLASH_TTL) {
+		if (_timer > _context->settings->moveTTL) {
 			refill(GRID_SX);
 			m_Mode = BK_REFILLING;
 			_timer = 0.0f;
