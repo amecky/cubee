@@ -37,17 +37,14 @@ void Bucket::init() {
 		_world->setColor(_refill[i], ds::Color(255, 255, 255, 64));
 	}
 	
+
 	int i = 0;
-	for ( int x = 0; x < GRID_SX; ++x ) {	
-		for ( int y = 0; y < GRID_SY; ++y ) {			
-			ds::Sprite* sp = &m_BackGrid[i];
-			sp->position = v2(START_X + x * CELL_SIZE,START_Y + y * CELL_SIZE);
-			sp->texture = ds::math::buildTexture(ds::Rect(0, 0, CELL_SIZE, CELL_SIZE));
-			++i;
-		}
+	for ( int y = 0; y < GRID_SY; ++y ) {		
+		_world->create(v2(512, START_Y + y * CELL_SIZE - CELL_SIZE/2), ds::math::buildTexture(ds::Rect(240, 0, 100, 2)),0.0f,4.0f,1.0f);
 	}
-	m_BottomBar.position = v2(512,102);
-	m_BottomBar.texture = ds::math::buildTexture(ds::Rect(190, 0, 400, 10));
+	
+	//_bottomBar = _world->create(v2(512, 102), ds::math::buildTexture(240, 0, 100, 6));
+
 	m_TopBar.position = v2(512,START_Y + GRID_SY * CELL_SIZE - 15);
 	m_TopBar.texture = ds::math::buildTexture(ds::Rect(190, 0, 400, 10));
 
@@ -269,18 +266,6 @@ void Bucket::update(float elapsed) {
 			_timer = 0.0f;
 		}
 	}
-}
-
-// -------------------------------------------------------
-// Draw grid
-// -------------------------------------------------------
-void Bucket::drawGrid() {
-	int total = GRID_SX * GRID_SY;
-	for ( int x = 0; x < total; ++x ) {	
-		ds::sprites::draw(m_BackGrid[x]);		
-	}
-	ds::sprites::draw(m_TopBar);
-	ds::sprites::draw(m_BottomBar);
 }
 
 // -------------------------------------------------------

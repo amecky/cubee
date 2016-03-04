@@ -49,7 +49,6 @@ public:
 	void init();
 	void clear();
 	void update(float elapsed);
-	void drawGrid();
 	void fillRow(int row,int pieces);
 	void fill(int minCol,int maxCol);
 	bool refill(int pieces,bool move = true);
@@ -88,9 +87,8 @@ private:
 	//float m_GlowTimer;
 	int m_Filled;
 	int m_PercentFilled;
-	ds::Sprite m_BackGrid[GRID_SX * GRID_SY];
 	ds::Sprite m_TopBar;
-	ds::Sprite m_BottomBar;
+	ds::SID _bottomBar;
 };
 
 
