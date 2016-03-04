@@ -5,22 +5,7 @@
 #include <sprites\Sprite.h>
 #include "GameContext.h"
 
-struct Point {
-	int x;
-	int y;
-	Point() : x(0), y(0) {}
-	Point(int _x, int _y) : x(_x), y(_y) {}
-};
-
-inline bool operator==(const Point& first, const Point& second) {
-	return first.x == second.x && first.y == second.y;
-}
-
-inline bool operator!=(const Point& first, const Point& second) {
-	return first.x != second.x || first.y != second.y;
-}
-
-const Point INVALID_POINT = Point(-1, -1);
+const ds::Point INVALID_POINT = ds::Point(-1, -1);
 
 struct GridEntry {
 	ds::SID sid;
@@ -50,12 +35,13 @@ enum BucketMode {
 	BK_RUNNING,
 	BK_MOVING,
 	BK_GLOWING,
-	BK_REFILLING
+	BK_REFILLING,
+	BK_SWAPPING,
+	BK_BACK_SWAPPING
 };
 
-typedef ds::Array<ds::DroppedCell> RemovedCells;
-typedef std::vector<ds::Sprite> Highlights;
-typedef ds::Array<ds::GridPoint> Points;
+typedef ds::Array<ds::DroppedCell> DroppedCells;
+typedef ds::Array<ds::Point> Points;
 
 public:
 	Bucket(GameContext* context);
@@ -73,32 +59,32 @@ public:
 	const int getOccupied() const {
 		return m_PercentFilled;
 	}
+	void debug();
 private:	
-	const bool isValid(const Point& p) const;
+	const bool isValid(const ds::Point& p) const;
 	const bool isValid(int x, int y) const;
 	const bool isUsed(int x, int y) const;
-	const bool isUsed(const Point& p) const;
-	int swapCells(int fx, int fy, int sx, int sy);
-	int findMatching(int gx,int gy);
+	const bool isUsed(const ds::Point& p) const;
+	int swapCells(const ds::Point& first, const ds::Point& second);
+	int findMatching(const ds::Point& p);
 	void calculateFillRate();
 
 	GameContext* _context;
 	ds::World* _world;
 	ds::SID _refill[GRID_SX];
-
-
-	Highlights m_Highlights;
 	Points m_Points;
-	
-	RemovedCells m_RemovedCells;
+	DroppedCells _droppedCells;	
+	ds::Point _selectedEntry;
+	ds::Point _lastUpdate;
+	float _timer;
 	ds::SID _selection;
-	Point _selectedEntry;
-	Point _lastUpdate;
+	ds::Point _firstSwapPoint;
+	ds::Point _secondSwapPoint;
 
 	ColorGrid m_Grid;
 	BucketMode m_Mode;
 	bool m_Refilling;
-	float m_GlowTimer;
+	//float m_GlowTimer;
 	int m_Filled;
 	int m_PercentFilled;
 	ds::Sprite m_BackGrid[GRID_SX * GRID_SY];

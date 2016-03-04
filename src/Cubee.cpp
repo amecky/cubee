@@ -17,6 +17,8 @@ bool Cubee::loadContent() {
 	_context = new GameContext();
 	_context->world = world;
 	_bucket = new Bucket(_context);
+	_context->settings = new GameSettings();
+	_context->settings->load();
 	//m_Background.setPosition(Vector2f(512,384));
 	//m_Background.setTextureRect(ds::Rect(0,512,512,384));
 	//m_Background.setScale(Vector2f(2.0f,2.0f));	
@@ -97,6 +99,9 @@ void Cubee::OnChar( char ascii,unsigned int keyState ) {
 	}
 	if ( ascii == 'e' ) {
 		stopGame();
+	}
+	if (ascii == 'd') {
+		_bucket->debug();
 	}
 }
 

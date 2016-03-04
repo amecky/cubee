@@ -8,16 +8,20 @@ v2 convert(int gx, int gy) {
 	return v2(START_X + gx * CELL_SIZE, START_Y + gy * CELL_SIZE);
 }
 
-Point convert(const v2& screenPos) {
+v2 convert(const ds::Point& p) {
+	return v2(START_X + p.x * CELL_SIZE, START_Y + p.y * CELL_SIZE);
+}
+
+ds::Point convert(const v2& screenPos) {
 	int x = (screenPos.x - START_X + CELL_SIZE / 2) / CELL_SIZE;
 	int y = (screenPos.y - START_Y + CELL_SIZE / 2) / CELL_SIZE;
-	return Point(x, y);
+	return ds::Point(x, y);
 }
 
 // -------------------------------------------------------
 // Grid
 // -------------------------------------------------------
-Bucket::Bucket(GameContext* context) : _context(context) , _world(context->world) , m_Grid(GRID_SX,GRID_SY) {		
+Bucket::Bucket(GameContext* context) : _context(context) , _world(context->world) , m_Grid(GRID_SX,GRID_SY) , _timer(0.0f) {		
 	//clear();
 }
 
@@ -65,7 +69,7 @@ void Bucket::clear() {
 	//m_FirstSelection.setActive(false);
 	m_Mode = BK_RUNNING;
 	m_Filled = 0;
-	_lastUpdate = Point(-1, -1);
+	_lastUpdate = INVALID_POINT;
 }
 
 // -------------------------------------------------------
@@ -78,6 +82,7 @@ void Bucket::fill(int minCol,int maxCol) {
 		fillRow(x,pieces);
 	}
 	calculateFillRate();
+	m_Mode = BK_RUNNING;
 }
 
 // -------------------------------------------------------
@@ -88,7 +93,7 @@ void Bucket::fillRow(int row,int pieces) {
 		GridEntry entry;
 		entry.color = ds::math::random(0, MAX_COLORS - 1);
 		int offset = entry.color * CELL_SIZE;
-		entry.sid = _world->create(v2(START_X + row * CELL_SIZE, START_Y + y * CELL_SIZE), ds::math::buildTexture(ds::Rect(BLOCK_TOP, offset, CELL_SIZE, CELL_SIZE)));
+		entry.sid = _world->create(convert(row,y), ds::math::buildTexture(ds::Rect(BLOCK_TOP, offset, CELL_SIZE, CELL_SIZE)));
 		m_Grid.set(row,y,entry);
 	}
 }
@@ -141,16 +146,11 @@ bool Bucket::refill(int pieces,bool move) {
 			// if row is full we cannot refill and game is over
 			if (isRowFull(i)) {
 				LOG << "Row " << i << " is full";
-				//RowFullEvent evn;
-				//evn.row = i;
-				//getEvents().add(1,&evn,sizeof(RowFullEvent));
 				return false;
 			}
-			
-			//m_MovingCells->addRefill(i,node->getID());		
 		}
-	}
-	m_Mode = BK_REFILLING;
+		m_Mode = BK_REFILLING;
+	}	
 	for ( int i = 0; i < GRID_SX; ++i ) {
 		int type = ds::math::random(0,MAX_COLORS-1);
 		_world->setType(_refill[i], type);
@@ -185,55 +185,90 @@ void Bucket::calculateFillRate() {
 // Update
 // -------------------------------------------------------
 void Bucket::update(float elapsed) {
-	v2 mp = ds::renderer::getMousePosition();
-	Point p = convert(mp);
-	if (isValid(p.x,p.y) && isUsed(p.x, p.y)) {		
-		if (p.x != _lastUpdate.x || p.y != _lastUpdate.y) {
-			_lastUpdate = p;
-			const GridEntry& entry = m_Grid.get(p.x, p.y);
-			_world->startBehavior(entry.sid, "wiggle_scale");
+	if (m_Mode == BK_RUNNING) {
+		v2 mp = ds::renderer::getMousePosition();
+		ds::Point p = convert(mp);
+		if (isValid(p.x, p.y) && isUsed(p.x, p.y)) {
+			if (p != _lastUpdate && p != _selectedEntry) {
+				_lastUpdate = p;
+				const GridEntry& entry = m_Grid.get(p.x, p.y);
+				_world->startBehavior(entry.sid, "wiggle_scale");
+			}
 		}
 	}
-	if (m_Mode == BK_GLOWING) {
-		m_GlowTimer += elapsed;
-		if (m_GlowTimer > FLASH_TTL) {
+	else if (m_Mode == BK_GLOWING) {
+		_timer += elapsed;
+		if (_timer > FLASH_TTL) {
+			debug();
 			m_Mode = BK_MOVING;
 			m_Grid.remove(m_Points);
-			m_RemovedCells.clear();
-			m_Highlights.clear();
-			m_Grid.dropCells(m_RemovedCells);
-			for (size_t i = 0; i < m_RemovedCells.size(); ++i) {
-				const ds::DroppedCell& dc = m_RemovedCells[i];
+			for (int i = 0; i < m_Points.size(); ++i) {				
+				const GridEntry& e = m_Grid.get(m_Points[i]);
+				LOG << i << " => removed " << m_Points[i].x << " " << m_Points[i].y << " sid: " << e.sid;
+				_world->remove(e.sid);
+			}
+			_droppedCells.clear();
+			m_Grid.dropCells(_droppedCells);
+			for (size_t i = 0; i < _droppedCells.size(); ++i) {
+				const ds::DroppedCell& dc = _droppedCells[i];				
 				const GridEntry& org = m_Grid.get(dc.from.x, dc.from.y);
+				LOG << i << " => dropped from " << dc.from.x << " " << dc.from.y << " to " << dc.to.x << " " << dc.to.y << " org: " << org.sid;
 				v2 p = _world->getPosition(org.sid);
 				_world->moveTo(org.sid, convert(dc.from.x,dc.from.y), convert(dc.to.x,dc.to.y), 0.4f);
-				const GridEntry& old = m_Grid.get(dc.to.x, dc.to.y);
-				_world->remove(old.sid);
 			}
 			m_Points.clear();
+			_timer = 0.0f;
+			debug();
 		}
 	}
-}
-/*
-void Bucket::update(float elapsed) {
-	if ( m_Mode == BK_REFILLING ) {
-		m_MovingCells->update(elapsed);
-		if ( m_MovingCells->numActive() == 0 ) {
-			m_Mode = BK_RUNNING;	
-			calculateFillRate();
-		}
-	}
-	if ( m_Mode == BK_MOVING ) {
-		m_MovingCells->update(elapsed);
-		if ( m_MovingCells->numActive() == 0 ) {
+	else if (m_Mode == BK_MOVING) {
+		_timer += elapsed;
+		if (_timer > FLASH_TTL) {
 			refill(GRID_SX);
 			m_Mode = BK_REFILLING;
+			_timer = 0.0f;
 		}
-	}	
-
-	
+	}
+	else if (m_Mode == BK_REFILLING) {
+		_timer += elapsed;
+		if (_timer > FLASH_TTL) {
+			m_Mode = BK_RUNNING;
+			_timer = 0.0f;
+		}
+	}
+	else if (m_Mode == BK_SWAPPING) {
+		_timer += elapsed;
+		if (_timer > _context->settings->swapTTL) {
+			m_Points.clear();
+			int total = findMatching(_firstSwapPoint);
+			total += findMatching(_secondSwapPoint);
+			if ( total == 0 ) {
+				m_Mode = BK_BACK_SWAPPING;
+				const GridEntry& f = m_Grid.get(_firstSwapPoint);
+				const GridEntry& s = m_Grid.get(_secondSwapPoint);
+				_world->moveTo(f.sid, convert(_firstSwapPoint), convert(_secondSwapPoint), _context->settings->swapTTL, 0, tweening::linear);
+				_world->moveTo(s.sid, convert(_secondSwapPoint), convert(_firstSwapPoint), _context->settings->swapTTL, 0, tweening::linear);
+				m_Grid.swap(_firstSwapPoint, _secondSwapPoint);
+			}
+			else {
+				_timer = 0.0f;
+				m_Mode = BK_GLOWING;
+				for (int i = 0; i < m_Points.size(); ++i) {
+					const GridEntry& e = m_Grid.get(m_Points[i]);
+					_world->startBehavior(e.sid, "wiggle_scale");
+				}
+			}
+		}
+	}
+	else if (m_Mode == BK_BACK_SWAPPING) {
+		_timer += elapsed;
+		if (_timer > _context->settings->swapTTL) {			
+			m_Mode = BK_RUNNING;
+			_timer = 0.0f;
+		}
+	}
 }
-*/
+
 // -------------------------------------------------------
 // Draw grid
 // -------------------------------------------------------
@@ -249,7 +284,7 @@ void Bucket::drawGrid() {
 // -------------------------------------------------------
 // is valid position
 // -------------------------------------------------------
-const bool Bucket::isValid(const Point& p) const {
+const bool Bucket::isValid(const ds::Point& p) const {
 	if (p.x < 0 || p.x >= GRID_SX) {
 		return false;
 	}
@@ -282,48 +317,54 @@ const bool Bucket::isUsed(int x,int y) const {
 // -------------------------------------------------------
 // is used
 // -------------------------------------------------------
-const bool Bucket::isUsed(const Point& p) const {
+const bool Bucket::isUsed(const ds::Point& p) const {
 	return !m_Grid.isFree(p.x, p.y);
 }
 
 // -------------------------------------------------------
 // Swap cells
 // -------------------------------------------------------
-int Bucket::swapCells(int fx,int fy,int sx,int sy) {	
-	const GridEntry& org = m_Grid(fx,fy);
-	m_Grid.set(fx,fy,m_Grid(sx,sy));
-	m_Grid.set(sx,sy,org);
-	//m_Highlights.clear();
-	m_Points.clear();
-	int total = findMatching(fx,fy);
-	total += findMatching(sx,sy);	
-	if ( total == 0 ) {		
-		// not allowed - swap back
-		const GridEntry& tmp = m_Grid(fx,fy);
-		m_Grid.set(fx,fy,m_Grid(sx,sy));
-		m_Grid.set(sx,sy,tmp);
+int Bucket::swapCells(const ds::Point& first, const ds::Point& second) {
+	if (first != second) {
+		const GridEntry& f = m_Grid.get(first);
+		const GridEntry& s = m_Grid.get(second);
+		_world->moveTo(f.sid, convert(first), convert(second), _context->settings->swapTTL, 0, tweening::linear);
+		_world->moveTo(s.sid, convert(second), convert(first), _context->settings->swapTTL, 0, tweening::linear);
+		m_Grid.swap(first, second);
+		m_Mode = BK_SWAPPING;
+		_timer = 0.0f;
+		_firstSwapPoint = first;
+		_secondSwapPoint = second;
+		/*
+		//const GridEntry& org = m_Grid(fx,fy);
+		//m_Grid.set(fx,fy,m_Grid.get(sx,sy));
+		//m_Grid.set(sx,sy,org);
+		m_Points.clear();
+		int total = findMatching(first);
+		total += findMatching(second);
+		if ( total == 0 ) {
+			m_Grid.swap(second, first);
+		}
+		return total;
+		*/
 	}
-	return total;
+	return 0;
 }
 
-int Bucket::findMatching(int gx,int gy) {
+// -------------------------------------------------------
+// find matching
+// -------------------------------------------------------
+int Bucket::findMatching(const ds::Point& p) {
 	int total = 0;
-	ds::Array<ds::GridPoint> points;
-	m_Grid.findMatchingNeighbours(gx,gy,points);
+	ds::Array<ds::Point> points;
+	m_Grid.findMatchingNeighbours(p.x,p.y,points);
 	if ( points.size() > 2 ) {
 		total += points.size();
 		for ( size_t i = 0; i < points.size(); ++i ) {
-			const ds::GridPoint& gp = points[i];
+			const ds::Point& gp = points[i];
 			const GridEntry& c = m_Grid.get(gp.x,gp.y);
-			ds::Sprite h;
-			h.texture = ds::math::buildTexture(ds::Rect(80,300,58,58));
-			h.position = v2(START_X + gp.x * CELL_SIZE,START_Y + gp.y * CELL_SIZE);					
-
-			h.color = COLOR_ARRAY[c.color];
-			m_Highlights.push_back(h);
 			m_Points.push_back(points[i]);
-
-			_world->scaleTo(c.sid, v2(1, 1), v2(0.1f, 0.1f), 0.2f);
+			_world->scaleTo(c.sid, v2(1, 1), v2(0.1f, 0.1f), 0.4f);
 		}
 	}
 	return total;
@@ -335,19 +376,26 @@ int Bucket::findMatching(int gx,int gy) {
 int Bucket::selectCell() {
 	int ret = -1;
 	v2 mp = ds::renderer::getMousePosition();
-	Point p = convert(mp);
-	//if ( m_Mode == BK_RUNNING ) {		
+	ds::Point p = convert(mp);
+	if ( m_Mode == BK_RUNNING ) {		
 		if ( isValid(p) && isUsed(p)) {
 			if (_selectedEntry == INVALID_POINT) {
 				_selectedEntry = p;
-				// FIXME: show selection
-				//m_FirstSelection.setPosition(Vector2f(START_X + x * CELL_SIZE,START_Y + y * CELL_SIZE));
-				//m_FirstSelection.setTarget(Vector2f(x,y));
-			}		
+				const GridEntry& entry = m_Grid.get(p);
+				_world->scale(entry.sid, 1.2f, 1.2f);				
+			}	
+			else if (_selectedEntry == p) {
+				const GridEntry& entry = m_Grid.get(_selectedEntry);
+				_world->scale(entry.sid, 1.0f, 1.0f);
+				_selectedEntry = INVALID_POINT;
+			}
 			else {
-				ret = swapCells(p.x,p.y,_selectedEntry.x,_selectedEntry.y);
+				const GridEntry& entry = m_Grid.get(_selectedEntry);
+				_world->scale(entry.sid, 1.0f, 1.0f);
+				ret = swapCells(p,_selectedEntry);
+				LOG << "--------> RET: " << ret;
 				if ( ret > 0 ) {
-					m_GlowTimer = 0.0f;
+					_timer = 0.0f;
 					m_Mode = BK_GLOWING;
 				}
 				_selectedEntry = INVALID_POINT;
@@ -356,9 +404,29 @@ int Bucket::selectCell() {
 		else {
 			_selectedEntry = INVALID_POINT;
 		}
-	//}
-	//else {
-		//LOG << "not running";
-	//}
+	}
+	else {
+		LOG << "not running";
+	}
 	return ret;
+}
+
+void Bucket::debug() {
+	char buffer[32];
+	LOG << "-------------------------------------------";
+	for (int y = GRID_SY - 1; y >= 0; --y) {
+		std::string tmp;
+		for (int x = 0; x < GRID_SX; ++x) {
+			if (m_Grid.isFree(x, y)) {
+				sprintf_s(buffer, 32, "-------- ");
+			}
+			else {
+				const GridEntry& e = m_Grid.get(x, y);
+				sprintf_s(buffer, 32, "%2d (%3d) ", e.color, e.sid);				
+			}
+			tmp += buffer;
+		}
+		LOG << tmp;
+	}
+	LOG << "-------------------------------------------";
 }
