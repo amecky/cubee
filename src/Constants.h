@@ -22,7 +22,8 @@ const float FLASH_TTL = 0.35f;
 
 const ds::Rect SELECTION_RECT = ds::Rect(80,240,40,40);
 
-const int BLOCK_TOP = 120;
+const int BLOCK_TOP = 0;
+const int BLOCK_LEFT = 160;
 
 const ds::Color COLOR_ARRAY[] = {
 	ds::Color(162,14,14,255) ,

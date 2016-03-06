@@ -19,6 +19,7 @@ bool Cubee::loadContent() {
 	_bucket = new Bucket(_context);
 	_context->settings = new GameSettings();
 	_context->settings->load();
+	_context->hud = gui->get("HUD");
 	//m_Background.setPosition(Vector2f(512,384));
 	//m_Background.setTextureRect(ds::Rect(0,512,512,384));
 	//m_Background.setScale(Vector2f(2.0f,2.0f));	
@@ -36,25 +37,13 @@ void Cubee::init() {
 // Restart game
 // -------------------------------------------------------
 void Cubee::restart() {
-	/*
-	m_Bucket.clear();
-	m_Score.points = 0;
-	m_Score.moves = 0;
-	m_Score.occupied = 0;
-	m_Score.bestMove = 0;
-	*/
 	_bucket->fill(2, 6);
 	_bucket->refill(GRID_SX, false);
 	m_Mode = GM_RUNNING;
-	/*
-	m_HUD.setCounterValue(0,0);
-	m_HUD.setCounterValue(1,0);
-	m_HUD.setCounterValue(2,0);
-	m_HUD.setTimer(0,0,0);
-	std::string str;
-	ds::string::formatInt(m_Bucket.getOccupied(),str);
-	m_HUD.setText(8,str+"%");
-	*/
+	_context->hud->activate();
+	_context->hud->resetTimer(3);
+	_context->hud->startTimer(3);
+	_context->score.reset();
 }
 // -------------------------------------------------------
 // Update

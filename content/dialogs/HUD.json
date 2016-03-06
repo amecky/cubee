@@ -1,0 +1,32 @@
+image { 
+    id : 0
+    pos : 100,700
+    color : 255,255,255,255
+    centered : false
+    scale : 1
+    rect : 80,0,180,50
+}
+image { 
+    id : 1
+    pos : 900,700
+    color : 255,255,255,255
+    centered : false
+    scale : 1
+    rect : 80,0,180,50
+}
+numbers { 
+    id : 2
+    pos : 100,700
+    color : 255,255,255,255
+    centered : false
+    scale : 1
+    value : 0
+    length : 6
+}
+timer { 
+    id : 3
+    pos : 900,700
+    color : 255,255,255,255
+    centered : false
+    scale : 1
+}

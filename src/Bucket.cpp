@@ -33,14 +33,14 @@ Bucket::~Bucket() {}
 void Bucket::init() {
 	
 	for ( int i = 0; i < GRID_SX; ++i ) {
-		_refill[i] = _world->create(v2(START_X + i * CELL_SIZE, REFILL_Y_POS), ds::math::buildTexture(ds::Rect(BLOCK_TOP, 0, CELL_SIZE, CELL_SIZE)));
-		_world->setColor(_refill[i], ds::Color(255, 255, 255, 64));
+		_refill[i] = _world->create(v2(START_X + i * CELL_SIZE, REFILL_Y_POS), ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT, CELL_SIZE, CELL_SIZE)));
+		_world->setColor(_refill[i], ds::Color(255, 255, 255, 128));
 	}
 	
 
 	int i = 0;
 	for ( int y = 0; y < GRID_SY; ++y ) {		
-		_world->create(v2(512, START_Y + y * CELL_SIZE - CELL_SIZE/2), ds::math::buildTexture(ds::Rect(240, 0, 100, 2)),0.0f,4.0f,1.0f);
+		_world->create(v2(512, START_Y + y * CELL_SIZE), ds::math::buildTexture(ds::Rect(0, 320, 440, 40)));
 	}
 	
 	//_bottomBar = _world->create(v2(512, 102), ds::math::buildTexture(240, 0, 100, 6));
@@ -48,7 +48,7 @@ void Bucket::init() {
 	m_TopBar.position = v2(512,START_Y + GRID_SY * CELL_SIZE - 15);
 	m_TopBar.texture = ds::math::buildTexture(ds::Rect(190, 0, 400, 10));
 
-	_selection = _world->create(v2(START_X,START_Y),ds::math::buildTexture(SELECTION_RECT));
+	//_selection = _world->create(v2(START_X,START_Y),ds::math::buildTexture(SELECTION_RECT));
 	_selectedEntry = INVALID_POINT;
 }
 
@@ -90,7 +90,7 @@ void Bucket::fillRow(int row,int pieces) {
 		GridEntry entry;
 		entry.color = ds::math::random(0, MAX_COLORS - 1);
 		int offset = entry.color * CELL_SIZE;
-		entry.sid = _world->create(convert(row,y), ds::math::buildTexture(ds::Rect(BLOCK_TOP, offset, CELL_SIZE, CELL_SIZE)));
+		entry.sid = _world->create(convert(row,y), ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT + offset, CELL_SIZE, CELL_SIZE)));
 		m_Grid.set(row,y,entry);
 	}
 }
@@ -117,7 +117,9 @@ void Bucket::moveRow(int row) {
 			m_Grid.remove(row,y-1);		
 			v2 s = convert(row, y - 1);
 			v2 e = convert(row, y);
-			_world->moveTo(entry.sid, s, e, 0.5f, 0, tweening::easeInOutQuad);
+			if (_world->contains(entry.sid)) {
+				_world->moveTo(entry.sid, s, e, _context->settings->moveTTL, 0, tweening::easeInOutQuad);
+			}
 		}
 	}
 }
@@ -135,11 +137,11 @@ bool Bucket::refill(int pieces,bool move) {
 			GridEntry entry;
 			entry.color = _world->getType(node);
 			int offset = entry.color * CELL_SIZE;
-			entry.sid = _world->create(convert(i,0), ds::math::buildTexture(ds::Rect(BLOCK_TOP, offset, CELL_SIZE, CELL_SIZE)));
+			entry.sid = _world->create(convert(i, 0), ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT + offset, CELL_SIZE, CELL_SIZE)));
 			m_Grid.set(i, 0, entry);
 			v2 s = v2(START_X + i * CELL_SIZE, REFILL_Y_POS);
 			v2 e = convert(i, 0);
-			_world->moveTo(entry.sid, s, e, 0.5f, 0, tweening::easeInOutQuad);
+			_world->moveTo(entry.sid, s, e, _context->settings->moveTTL, 0, tweening::easeInOutQuad);
 			// if row is full we cannot refill and game is over
 			if (isRowFull(i)) {
 				LOG << "Row " << i << " is full";
@@ -152,11 +154,11 @@ bool Bucket::refill(int pieces,bool move) {
 		int type = ds::math::random(0,MAX_COLORS-1);
 		_world->setType(_refill[i], type);
 		int offset = type * CELL_SIZE;
-		_world->setTexture(_refill[i],ds::math::buildTexture(ds::Rect(120,offset,CELL_SIZE,CELL_SIZE)));
+		_world->setTexture(_refill[i], ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT + offset, CELL_SIZE, CELL_SIZE)));
 		v2 s = v2(START_X + i * CELL_SIZE, REFILL_Y_POS);
 		v2 e = s;
 		e.y -= 100.0f;
-		_world->moveTo(_refill[i], e, s, 0.5f, 0, tweening::easeInOutQuad);
+		_world->moveTo(_refill[i], e, s, _context->settings->moveTTL, 0, tweening::easeInOutQuad);
 	}
 	return true;
 }
@@ -215,6 +217,8 @@ void Bucket::update(float elapsed) {
 				v2 p = _world->getPosition(org.sid);
 				_world->moveTo(org.sid, convert(dc.from.x,dc.from.y), convert(dc.to.x,dc.to.y), _context->settings->moveTTL);
 			}
+			_context->score.add(m_Points.size());
+			_context->hud->setNumber(2, _context->score.points);
 			m_Points.clear();
 			_timer = 0.0f;
 			debug();
