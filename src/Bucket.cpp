@@ -29,7 +29,6 @@ Bucket::~Bucket() {}
 
 void Bucket::toggleTimer() {
 	_useTimer = !_useTimer;
-	LOG << "use timer: " << _useTimer;
 }
 // -------------------------------------------------------
 // Init
@@ -210,28 +209,34 @@ void Bucket::update(float elapsed) {
 			_timer += elapsed;
 		}
 		if (_timer > FLASH_TTL) {
-			debug();
-			m_Mode = BK_MOVING;
-			m_Grid.remove(m_Points);
-			for (int i = 0; i < m_Points.size(); ++i) {				
+			m_Mode = BK_DROPPING;
+			_timer = 0.0f;
+			m_Grid.remove(m_Points,false);
+			for (int i = 0; i < m_Points.size(); ++i) {
 				const GridEntry& e = m_Grid.get(m_Points[i]);
 				LOG << i << " => removed " << m_Points[i].x << " " << m_Points[i].y << " sid: " << e.sid;
 				_world->remove(e.sid);
 			}
+		}
+	}
+	else if (m_Mode == BK_DROPPING) {
+		if (_useTimer) {
+			_timer += elapsed;
+		}
+		if (_timer > FLASH_TTL) {
+			m_Mode = BK_MOVING;
 			_droppedCells.clear();
 			m_Grid.dropCells(_droppedCells);
 			for (size_t i = 0; i < _droppedCells.size(); ++i) {
-				const ds::DroppedCell& dc = _droppedCells[i];				
-				const GridEntry& org = m_Grid.get(dc.from.x, dc.from.y);
-				LOG << i << " => dropped from " << dc.from.x << " " << dc.from.y << " to " << dc.to.x << " " << dc.to.y << " org: " << org.sid;
-				v2 p = _world->getPosition(org.sid);
-				_world->moveTo(org.sid, convert(dc.from.x,dc.from.y), convert(dc.to.x,dc.to.y), _context->settings->moveTTL);
+				const ds::DroppedCell<GridEntry>& dc = _droppedCells[i];				
+				LOG << i << " => dropped from " << dc.from.x << " " << dc.from.y << " to " << dc.to.x << " " << dc.to.y << " org: " << dc.data.sid;
+				v2 p = _world->getPosition(dc.data.sid);
+				_world->moveTo(dc.data.sid, convert(dc.from.x,dc.from.y), convert(dc.to.x,dc.to.y), _context->settings->moveTTL);
 			}
 			_context->score.add(m_Points.size());
 			_context->hud->setNumber(2, _context->score.points);
 			m_Points.clear();
 			_timer = 0.0f;
-			debug();
 		}
 	}
 	else if (m_Mode == BK_MOVING) {
@@ -288,6 +293,14 @@ void Bucket::update(float elapsed) {
 			_timer = 0.0f;
 		}
 	}
+
+	if (_useTimer) {
+		ds::renderer::print(v2(10, 10), "Timer: ON", ds::Color::BLACK);
+	}
+	else {
+		ds::renderer::print(v2(10, 10), "Timer: OFF", ds::Color::BLACK);
+	}
+	ds::renderer::print(v2(10, 30), translate(m_Mode), ds::Color::BLACK);
 }
 
 // -------------------------------------------------------
@@ -434,4 +447,17 @@ void Bucket::debug() {
 		tmp += buffer;
 	}
 	LOG << tmp;	
+}
+
+const char* Bucket::translate(BucketMode mode) {
+	switch (mode) {
+		case BK_RUNNING: return "Running"; break;
+		case BK_MOVING: return "Moving"; break;
+		case BK_GLOWING: return "Glowing"; break;
+		case BK_REFILLING: return "Refilling"; break;
+		case BK_SWAPPING: return "Swapping"; break;
+		case BK_BACK_SWAPPING: return "BackSwapping"; break;
+		case BK_DROPPING: return "Dropping"; break;
+		default: return "UNKNOWN";
+	}
 }

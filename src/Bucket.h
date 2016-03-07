@@ -37,10 +37,11 @@ enum BucketMode {
 	BK_GLOWING,
 	BK_REFILLING,
 	BK_SWAPPING,
-	BK_BACK_SWAPPING
+	BK_BACK_SWAPPING,
+	BK_DROPPING
 };
 
-typedef ds::Array<ds::DroppedCell> DroppedCells;
+typedef ds::Array<ds::DroppedCell<GridEntry>> DroppedCells;
 typedef ds::Array<ds::Point> Points;
 
 public:
@@ -71,6 +72,7 @@ private:
 	int swapCells(const ds::Point& first, const ds::Point& second);
 	int findMatching(const ds::Point& p);
 	void calculateFillRate();
+	const char* translate(BucketMode mode);
 
 	GameContext* _context;
 	ds::World* _world;
