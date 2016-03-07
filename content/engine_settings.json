@@ -31,6 +31,6 @@ init_actions {
 	load_sprite_templates : false
 	initialize_editor : true
 	load_behaviors : true
-	start_server : true
+	start_server : false
 	server_port : 9000
 }

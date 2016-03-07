@@ -92,6 +92,12 @@ void Cubee::OnChar( char ascii,unsigned int keyState ) {
 	if (ascii == 'd') {
 		_bucket->debug();
 	}
+	if (ascii == 't') {
+		_bucket->toggleTimer();
+	}
+	if (ascii == 'k') {
+		_bucket->kickTimer(3000.0f);
+	}
 }
 
 // -------------------------------------------------------

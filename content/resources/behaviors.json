@@ -5,6 +5,13 @@ wiggle_scale {
 		mode : 0
 	}
 }
+fade_scale {
+	scale_by_path {
+		path : 0.0,1.0,1.0,0.4,0.8,0.8,0.8,1.2,1.2,1.0,0.1,0.1
+		ttl : 0.4
+		mode : 0
+	}
+}
 highlight {
 	scale_by_path {
 		path : 0.0,1.0,1.0,0.4,0.9,0.9,0.8,1.1,1.1,1.0,1.0,1.0

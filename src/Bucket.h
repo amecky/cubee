@@ -59,6 +59,10 @@ public:
 		return m_PercentFilled;
 	}
 	void debug();
+	void toggleTimer();
+	void kickTimer(float v) {
+		_timer += v;
+	}
 private:	
 	const bool isValid(const ds::Point& p) const;
 	const bool isValid(int x, int y) const;
@@ -80,6 +84,7 @@ private:
 	ds::SID _selection;
 	ds::Point _firstSwapPoint;
 	ds::Point _secondSwapPoint;
+	bool _useTimer;
 
 	ColorGrid m_Grid;
 	BucketMode m_Mode;

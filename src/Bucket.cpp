@@ -21,12 +21,16 @@ ds::Point convert(const v2& screenPos) {
 // -------------------------------------------------------
 // Grid
 // -------------------------------------------------------
-Bucket::Bucket(GameContext* context) : _context(context) , _world(context->world) , m_Grid(GRID_SX,GRID_SY) , _timer(0.0f) {		
+Bucket::Bucket(GameContext* context) : _context(context) , _world(context->world) , m_Grid(GRID_SX,GRID_SY) , _timer(0.0f) , _useTimer(true) {		
 	//clear();
 }
 
 Bucket::~Bucket() {}
 
+void Bucket::toggleTimer() {
+	_useTimer = !_useTimer;
+	LOG << "use timer: " << _useTimer;
+}
 // -------------------------------------------------------
 // Init
 // -------------------------------------------------------
@@ -90,7 +94,11 @@ void Bucket::fillRow(int row,int pieces) {
 		GridEntry entry;
 		entry.color = ds::math::random(0, MAX_COLORS - 1);
 		int offset = entry.color * CELL_SIZE;
-		entry.sid = _world->create(convert(row,y), ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT + offset, CELL_SIZE, CELL_SIZE)));
+		v2 pos = convert(row, y);
+		entry.sid = _world->create(pos, ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT + offset, CELL_SIZE, CELL_SIZE)));
+		v2 sp = pos;
+		sp.y += 800.0f + CELL_SIZE * y;
+		_world->moveTo(entry.sid, sp, pos, 0.8f);
 		m_Grid.set(row,y,entry);
 	}
 }
@@ -198,7 +206,9 @@ void Bucket::update(float elapsed) {
 		}
 	}
 	else if (m_Mode == BK_GLOWING) {
-		_timer += elapsed;
+		if (_useTimer) {
+			_timer += elapsed;
+		}
 		if (_timer > FLASH_TTL) {
 			debug();
 			m_Mode = BK_MOVING;
@@ -225,7 +235,9 @@ void Bucket::update(float elapsed) {
 		}
 	}
 	else if (m_Mode == BK_MOVING) {
-		_timer += elapsed;
+		if (_useTimer) {
+			_timer += elapsed;
+		}
 		if (_timer > _context->settings->moveTTL) {
 			refill(GRID_SX);
 			m_Mode = BK_REFILLING;
@@ -233,14 +245,18 @@ void Bucket::update(float elapsed) {
 		}
 	}
 	else if (m_Mode == BK_REFILLING) {
-		_timer += elapsed;
+		if (_useTimer) {
+			_timer += elapsed;
+		}
 		if (_timer > FLASH_TTL) {
 			m_Mode = BK_RUNNING;
 			_timer = 0.0f;
 		}
 	}
 	else if (m_Mode == BK_SWAPPING) {
-		_timer += elapsed;
+		if (_useTimer) {
+			_timer += elapsed;
+		}
 		if (_timer > _context->settings->swapTTL) {
 			m_Points.clear();
 			int total = findMatching(_firstSwapPoint);
@@ -258,13 +274,15 @@ void Bucket::update(float elapsed) {
 				m_Mode = BK_GLOWING;
 				for (int i = 0; i < m_Points.size(); ++i) {
 					const GridEntry& e = m_Grid.get(m_Points[i]);
-					_world->startBehavior(e.sid, "wiggle_scale");
+					_world->startBehavior(e.sid, "fade_scale");
 				}
 			}
 		}
 	}
 	else if (m_Mode == BK_BACK_SWAPPING) {
-		_timer += elapsed;
+		if (_useTimer) {
+			_timer += elapsed;
+		}
 		if (_timer > _context->settings->swapTTL) {			
 			m_Mode = BK_RUNNING;
 			_timer = 0.0f;
@@ -326,18 +344,6 @@ int Bucket::swapCells(const ds::Point& first, const ds::Point& second) {
 		_timer = 0.0f;
 		_firstSwapPoint = first;
 		_secondSwapPoint = second;
-		/*
-		//const GridEntry& org = m_Grid(fx,fy);
-		//m_Grid.set(fx,fy,m_Grid.get(sx,sy));
-		//m_Grid.set(sx,sy,org);
-		m_Points.clear();
-		int total = findMatching(first);
-		total += findMatching(second);
-		if ( total == 0 ) {
-			m_Grid.swap(second, first);
-		}
-		return total;
-		*/
 	}
 	return 0;
 }
@@ -404,9 +410,11 @@ int Bucket::selectCell() {
 
 void Bucket::debug() {
 	char buffer[32];
-	LOG << "-------------------------------------------";
+	LOG << "------------------------------------------------------------------------------------------------";
 	for (int y = GRID_SY - 1; y >= 0; --y) {
 		std::string tmp;
+		sprintf(buffer,"%2d | ", y);
+		tmp += buffer;
 		for (int x = 0; x < GRID_SX; ++x) {
 			if (m_Grid.isFree(x, y)) {
 				sprintf_s(buffer, 32, "-------- ");
@@ -419,5 +427,11 @@ void Bucket::debug() {
 		}
 		LOG << tmp;
 	}
-	LOG << "-------------------------------------------";
+	LOG << "------------------------------------------------------------------------------------------------";
+	std::string tmp = "     ";
+	for (int x = 0; x < GRID_SX; ++x) {
+		sprintf_s(buffer, 32, "  %2d     ", x);
+		tmp += buffer;
+	}
+	LOG << tmp;	
 }
