@@ -13,7 +13,13 @@ MainGameState::~MainGameState() {
 }
 
 int MainGameState::update(float dt) {
-	_bucket->update(dt);
+	int points = _bucket->update(dt);
+	if (points > 0) {
+		setScore(_context->score.points);
+	}
+	else if (points == -1) {
+		// dead
+	}
 	tick(dt);
 	//if ( m_Bucket.hasEvents()) {		
 	//stopGame();
@@ -34,6 +40,7 @@ void MainGameState::activate() {
 }
 
 void MainGameState::deactivate() {
+	deactivateHUD();
 
 }
 
@@ -43,18 +50,7 @@ int MainGameState::onButtonDown(int button, int x, int y) {
 
 int MainGameState::onButtonUp(int button, int x, int y) {
 	int points = _bucket->selectCell();
-	_context->score.add(points);
-	/*
-	m_HUD.setCounterValue(1,m_Score.moves);
-	if ( points > 0 ) {
-	if ( points > m_Score.bestMove ) {
-	m_Score.bestMove = points;
-	m_HUD.setCounterValue(2,m_Score.bestMove);
-	}
-	m_Score.points += points * 10;
-	m_HUD.setCounterValue(0,m_Score.points);
-	}
-	*/
+	
 	return 0;
 }
 
@@ -62,9 +58,9 @@ int MainGameState::onChar(int ascii) {
 	if (ascii == 'r') {
 		_bucket->refill(GRID_SX, true);
 	}
-	//if (ascii == 'e') {
-		//stopGame();
-	//}
+	if (ascii == 'e') {
+		return 666;
+	}
 	if (ascii == 'd') {
 		_bucket->debug();
 	}

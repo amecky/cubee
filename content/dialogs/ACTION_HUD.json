@@ -30,3 +30,18 @@ timer {
     centered : false
     scale : 1
 }
+image { 
+    id : 4
+    pos : 900,620
+    color : 255,255,255,255
+    centered : false
+    scale : 1
+    rect : 80,0,180,50
+}
+timer { 
+    id : 5
+    pos : 900,620
+    color : 255,255,255,255
+    centered : false
+    scale : 1
+}

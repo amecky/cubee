@@ -51,7 +51,7 @@ public:
 	~Bucket();
 	void init();
 	void clear();
-	void update(float elapsed);
+	int update(float elapsed);
 	void fillRow(int row,int pieces);
 	void fill(int minCol,int maxCol);
 	bool refill(int pieces,bool move = true);

@@ -1,10 +1,10 @@
 image { 
     id : 10
-    pos : 200,702
+    pos : 200,670
     color : 255,255,255,255
     centered : true
     scale : 1
-    rect : 0,420,600,90
+    rect : 480,0,540,110
 }
 button { 
     id : 0
@@ -12,7 +12,7 @@ button {
     color : 255,255,255,255
     centered : true
     scale : 1
-    rect : 80,0,300,50
+    rect : 80,500,300,50
     text : "Zen mode"
 }
 button { 
@@ -21,7 +21,7 @@ button {
     color : 255,255,255,255
     centered : true
     scale : 1
-    rect : 80,0,300,50
+    rect : 260,500,300,50
     text : "Exit"
 }
 button { 
@@ -30,7 +30,7 @@ button {
     color : 255,255,255,255
     centered : true
     scale : 1
-    rect : 80,0,300,50
+    rect : 200,500,300,50
     text : "Highscores"
 }
 button { 
@@ -39,7 +39,7 @@ button {
     color : 255,255,255,255
     centered : true
     scale : 1
-    rect : 80,0,300,50
+    rect : 320,500,300,50
     text : "Credits"
 }
 button { 
@@ -48,6 +48,6 @@ button {
     color : 255,255,255,255
     centered : true
     scale : 1
-    rect : 80,0,300,50
+    rect : 140,500,300,50
     text : "Action mode"
 }

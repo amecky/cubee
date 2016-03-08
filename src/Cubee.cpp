@@ -4,6 +4,7 @@
 #include <base\GameStateMachine.h>
 #include "ZenGameState.h"
 #include "ActionGameState.h"
+#include "GameOverState.h"
 
 ds::BaseApp *app = new Cubee(); 
 
@@ -23,7 +24,10 @@ bool Cubee::loadContent() {
 	addGameState(new ActionGameState(gui->get("ACTION_HUD"), _context));
 	addGameState(new ZenGameState(gui->get("ZEN_HUD"), _context));
 	addGameState(new ds::BasicMenuGameState("MainMenuState", "MainMenu", gui));
-	connectGameStates("MainMenuState", 1, "MainGameState");
+	addGameState(new GameOverState(_context, gui));
+	connectGameStates("ActionGameState", 666, "GameOverState");
+	connectGameStates("ZenGameState", 666, "GameOverState");
+	connectGameStates("GameOverState", 1, "MainMenuState");
 	return true;
 }
 

@@ -12,7 +12,12 @@ public:
 	virtual ~ZenGameState();
 	void tick(float dt);
 	void activateHUD();
+	void deactivateHUD();
+	void setScore(int points);
 private:
 	ds::GUIDialog* _hud;
+	float _scoreTimer;
+	int _count;
+	int _diff;
 };
 

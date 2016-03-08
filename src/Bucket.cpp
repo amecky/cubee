@@ -192,7 +192,16 @@ void Bucket::calculateFillRate() {
 // -------------------------------------------------------
 // Update
 // -------------------------------------------------------
-void Bucket::update(float elapsed) {
+int Bucket::update(float elapsed) {
+
+	if (_useTimer) {
+		ds::renderer::print(v2(10, 10), "Timer: ON", ds::Color::BLACK);
+	}
+	else {
+		ds::renderer::print(v2(10, 10), "Timer: OFF", ds::Color::BLACK);
+	}
+	ds::renderer::print(v2(10, 30), translate(m_Mode), ds::Color::BLACK);
+
 	if (m_Mode == BK_RUNNING) {
 		v2 mp = ds::renderer::getMousePosition();
 		ds::Point p = convert(mp);
@@ -203,6 +212,7 @@ void Bucket::update(float elapsed) {
 				_world->startBehavior(entry.sid, "wiggle_scale");
 			}
 		}
+		return 0;
 	}
 	else if (m_Mode == BK_GLOWING) {
 		if (_useTimer) {
@@ -218,6 +228,7 @@ void Bucket::update(float elapsed) {
 				_world->remove(e.sid);
 			}
 		}
+		return 0;
 	}
 	else if (m_Mode == BK_DROPPING) {
 		if (_useTimer) {
@@ -233,10 +244,10 @@ void Bucket::update(float elapsed) {
 				v2 p = _world->getPosition(dc.data.sid);
 				_world->moveTo(dc.data.sid, convert(dc.from.x,dc.from.y), convert(dc.to.x,dc.to.y), _context->settings->moveTTL);
 			}
-			_context->score.add(m_Points.size());
-			_context->hud->setNumber(2, _context->score.points);
+			int points = m_Points.size();
 			m_Points.clear();
 			_timer = 0.0f;
+			return points;
 		}
 	}
 	else if (m_Mode == BK_MOVING) {
@@ -244,10 +255,13 @@ void Bucket::update(float elapsed) {
 			_timer += elapsed;
 		}
 		if (_timer > _context->settings->moveTTL) {
-			refill(GRID_SX);
+			if (!refill(GRID_SX)) {
+				return -1;
+			}
 			m_Mode = BK_REFILLING;
 			_timer = 0.0f;
 		}
+		return 0;
 	}
 	else if (m_Mode == BK_REFILLING) {
 		if (_useTimer) {
@@ -257,6 +271,7 @@ void Bucket::update(float elapsed) {
 			m_Mode = BK_RUNNING;
 			_timer = 0.0f;
 		}
+		return 0;
 	}
 	else if (m_Mode == BK_SWAPPING) {
 		if (_useTimer) {
@@ -283,6 +298,7 @@ void Bucket::update(float elapsed) {
 				}
 			}
 		}
+		return 0;
 	}
 	else if (m_Mode == BK_BACK_SWAPPING) {
 		if (_useTimer) {
@@ -292,15 +308,9 @@ void Bucket::update(float elapsed) {
 			m_Mode = BK_RUNNING;
 			_timer = 0.0f;
 		}
+		return 0;
 	}
-
-	if (_useTimer) {
-		ds::renderer::print(v2(10, 10), "Timer: ON", ds::Color::BLACK);
-	}
-	else {
-		ds::renderer::print(v2(10, 10), "Timer: OFF", ds::Color::BLACK);
-	}
-	ds::renderer::print(v2(10, 30), translate(m_Mode), ds::Color::BLACK);
+	return 0;
 }
 
 // -------------------------------------------------------

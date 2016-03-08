@@ -10,3 +10,7 @@ ACTION_HUD {
 	id : 3 
 	file : "ACTION_HUD"
 }
+GameOver {
+	id : 4 
+	file : "GameOver"
+}

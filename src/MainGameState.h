@@ -18,9 +18,11 @@ public:
 	int onButtonUp(int button, int x, int y);
 	int onChar(int ascii);
 	virtual void tick(float dt) = 0;
+	virtual void setScore(int points) = 0;
 protected:
 	virtual void activateHUD() = 0;
-private:
+	virtual void deactivateHUD() = 0;
+	
 	GameContext* _context;
 	float _timer;
 	Bucket* _bucket;

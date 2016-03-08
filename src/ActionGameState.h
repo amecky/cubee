@@ -12,6 +12,8 @@ public:
 	virtual ~ActionGameState();
 	void tick(float dt);
 	void activateHUD();
+	void deactivateHUD();
+	void setScore(int points);
 private:
 	ds::GUIDialog* _hud;
 	float _refillTimer;
