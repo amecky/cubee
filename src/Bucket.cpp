@@ -21,7 +21,7 @@ ds::Point convert(const v2& screenPos) {
 // -------------------------------------------------------
 // Grid
 // -------------------------------------------------------
-Bucket::Bucket(GameContext* context) : _context(context) , _world(context->world) , m_Grid(GRID_SX,GRID_SY) , _timer(0.0f) , _useTimer(true) {		
+Bucket::Bucket(GameContext* context) : _context(context) , _world(context->world) , m_Grid(GRID_SX,GRID_SY) , _timer(0.0f) , _useTimer(true) , _playMode(PM_ZEN) {		
 	//clear();
 }
 

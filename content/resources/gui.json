@@ -1,4 +1,12 @@
-HUD {
+ZEN_HUD {
 	id : 1 
-	file : "HUD"
+	file : "ZEN_HUD"
+}
+MainMenu {
+	id : 2
+	file : "MainMenu"
+}
+ACTION_HUD {
+	id : 3 
+	file : "ACTION_HUD"
 }

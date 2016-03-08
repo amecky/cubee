@@ -1,7 +1,12 @@
 #pragma once
 #include <world\World.h>
 #include "GameSettings.h"
-#include <dialogs\GUIDialog.h>
+
+enum PlayMode {
+	PM_ZEN,
+	PM_ACTION,
+	PM_EOL
+};
 
 struct Score {
 
@@ -30,6 +35,6 @@ struct GameContext {
 
 	ds::World* world;
 	GameSettings* settings;
-	ds::GUIDialog* hud;
 	Score score;
+	PlayMode playMode;
 };

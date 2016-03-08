@@ -5,6 +5,8 @@
 #include <sprites\Sprite.h>
 #include "GameContext.h"
 
+
+
 const ds::Point INVALID_POINT = ds::Point(-1, -1);
 
 struct GridEntry {
@@ -96,6 +98,7 @@ private:
 	int m_PercentFilled;
 	ds::Sprite m_TopBar;
 	ds::SID _bottomBar;
+	PlayMode _playMode;
 };
 
 

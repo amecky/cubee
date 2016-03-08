@@ -14,25 +14,9 @@ struct GameContext;
 
 class Cubee : public ds::BaseApp {
 
-enum GameMode {
-	GM_START,
-	GM_RUNNING,
-	GM_OVER
-};
-
-struct Score {
-
-	int points;
-	int moves;
-	int bestMove;
-	int occupied;
-
-};
-
 public:	
 	Cubee();
 	virtual ~Cubee() {
-		delete _bucket;
 		delete _context;
 	}	
 	bool loadContent();
@@ -40,20 +24,7 @@ public:
 		return "Cubee";
 	}
 	void init();
-	void update(float dt);
-	void draw();
-	virtual void OnChar( char ascii,unsigned int keyState );
-	virtual void OnButtonUp( int button,int x,int y );
 private:
-	void stopGame();
-	void restart();
 	void onGUIButton( ds::DialogID dlgID,int button );
-	ds::Sprite m_Background;
-	
-	float m_Timer;
-	GameMode m_Mode;
-	Score m_Score;
-
 	GameContext* _context;
-	Bucket* _bucket;
 };
