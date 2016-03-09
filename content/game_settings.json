@@ -1,4 +1,6 @@
 settings {
 	swap_ttl : 0.2
 	move_ttl : 0.2
+	refill_timer : 10
+
 }
