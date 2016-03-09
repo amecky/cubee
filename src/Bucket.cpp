@@ -36,14 +36,14 @@ void Bucket::toggleTimer() {
 void Bucket::init() {
 	
 	for ( int i = 0; i < GRID_SX; ++i ) {
-		_refill[i] = _world->create(v2(START_X + i * CELL_SIZE, REFILL_Y_POS), ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT, CELL_SIZE, CELL_SIZE)));
+		_refill[i] = _world->create(v2(START_X + i * CELL_SIZE, REFILL_Y_POS), ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT, CELL_SIZE, CELL_SIZE)),OT_REFILL);
 		_world->setColor(_refill[i], ds::Color(255, 255, 255, 128));
 	}
 	
 
 	int i = 0;
 	for ( int y = 0; y < GRID_SY; ++y ) {		
-		_world->create(v2(512, START_Y + y * CELL_SIZE), ds::math::buildTexture(ds::Rect(0, 320, 440, 40)));
+		_world->create(v2(512, START_Y + y * CELL_SIZE), ds::math::buildTexture(ds::Rect(0, 320, 440, 40)),OT_BORDER);
 	}
 	
 	//_bottomBar = _world->create(v2(512, 102), ds::math::buildTexture(240, 0, 100, 6));
@@ -94,7 +94,7 @@ void Bucket::fillRow(int row,int pieces) {
 		entry.color = ds::math::random(0, MAX_COLORS - 1);
 		int offset = entry.color * CELL_SIZE;
 		v2 pos = convert(row, y);
-		entry.sid = _world->create(pos, ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT + offset, CELL_SIZE, CELL_SIZE)));
+		entry.sid = _world->create(pos, ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT + offset, CELL_SIZE, CELL_SIZE)),OT_GRIDENTRY);
 		v2 sp = pos;
 		sp.y += 800.0f + CELL_SIZE * y;
 		_world->moveTo(entry.sid, sp, pos, 0.8f);
@@ -144,7 +144,7 @@ bool Bucket::refill(int pieces,bool move) {
 			GridEntry entry;
 			entry.color = _world->getType(node);
 			int offset = entry.color * CELL_SIZE;
-			entry.sid = _world->create(convert(i, 0), ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT + offset, CELL_SIZE, CELL_SIZE)));
+			entry.sid = _world->create(convert(i, 0), ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT + offset, CELL_SIZE, CELL_SIZE)), OT_GRIDENTRY);
 			m_Grid.set(i, 0, entry);
 			v2 s = v2(START_X + i * CELL_SIZE, REFILL_Y_POS);
 			v2 e = convert(i, 0);
@@ -218,7 +218,7 @@ int Bucket::update(float elapsed) {
 		if (_useTimer) {
 			_timer += elapsed;
 		}
-		if (_timer > FLASH_TTL) {
+		if (_timer > _context->settings->moveTTL) {
 			m_Mode = BK_DROPPING;
 			_timer = 0.0f;
 			m_Grid.remove(m_Points,false);
@@ -234,7 +234,7 @@ int Bucket::update(float elapsed) {
 		if (_useTimer) {
 			_timer += elapsed;
 		}
-		if (_timer > FLASH_TTL) {
+		if (_timer > _context->settings->moveTTL) {
 			m_Mode = BK_MOVING;
 			_droppedCells.clear();
 			m_Grid.dropCells(_droppedCells);
@@ -267,9 +267,10 @@ int Bucket::update(float elapsed) {
 		if (_useTimer) {
 			_timer += elapsed;
 		}
-		if (_timer > FLASH_TTL) {
+		if (_timer > _context->settings->moveTTL) {
 			m_Mode = BK_RUNNING;
 			_timer = 0.0f;
+			synch();
 		}
 		return 0;
 	}
@@ -472,6 +473,36 @@ const char* Bucket::translate(BucketMode mode) {
 	}
 }
 
-void Bucket::synch() {
+bool Bucket::containsGridEntry(ds::SID sid) {
+	for (int x = 0; x < GRID_SX; ++x) {
+		for (int y = 0; y < GRID_SY; ++y) {
+			if (!m_Grid.isFree(x, y)) {
+				const GridEntry& entry = m_Grid.get(x, y);
+				if (entry.sid == sid) {
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
 
+void Bucket::synch() {
+	for (int x = 0; x < GRID_SX; ++x) {
+		for (int y = 0; y < GRID_SY; ++y) {
+			if (!m_Grid.isFree(x, y)) {
+				const GridEntry& entry = m_Grid.get(x, y);
+				if (!_world->contains(entry.sid)) {
+					LOG << "invalid grid entry at : " << x << " " << y << " sid: " << entry.sid;
+				}
+			}
+		}
+	}
+	ds::SID ids[256];
+	int num = _world->find_by_type(OT_GRIDENTRY,ids, 256);
+	for (int i = 0; i < num; ++i) {
+		if (!containsGridEntry(ids[i])) {
+			LOG << "found sprite not in bucket: " << ids[i];
+		}
+	}
 }

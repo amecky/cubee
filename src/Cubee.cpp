@@ -20,7 +20,6 @@ bool Cubee::loadContent() {
 	_context->world = world;
 	_context->settings = new GameSettings();
 	_context->settings->load();
-	//_context->hud = gui->get("HUD");
 	addGameState(new ActionGameState(gui->get("ACTION_HUD"), _context));
 	addGameState(new ZenGameState(gui->get("ZEN_HUD"), _context));
 	addGameState(new ds::BasicMenuGameState("MainMenuState", "MainMenu", gui));

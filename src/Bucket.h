@@ -68,6 +68,7 @@ public:
 	}
 	void synch();
 private:	
+	bool Bucket::containsGridEntry(ds::SID sid);
 	const bool isValid(const ds::Point& p) const;
 	const bool isValid(int x, int y) const;
 	const bool isUsed(int x, int y) const;
