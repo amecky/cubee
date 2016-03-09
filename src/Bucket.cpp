@@ -471,3 +471,7 @@ const char* Bucket::translate(BucketMode mode) {
 		default: return "UNKNOWN";
 	}
 }
+
+void Bucket::synch() {
+
+}

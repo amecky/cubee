@@ -6,15 +6,6 @@ ZenGameState::ZenGameState(ds::GUIDialog* hud,GameContext* ctx) : MainGameState(
 ZenGameState::~ZenGameState() {}
 
 void ZenGameState::tick(float dt) {
-	if (_diff > 0) {
-		_scoreTimer += dt;
-		if (_scoreTimer > 0.1f) {
-			--_diff;
-			_context->score.add(10);
-			_hud->setNumber(2, _context->score.points);
-			_scoreTimer -= 0.1f;
-		}
-	}
 }
 
 
@@ -30,8 +21,6 @@ void ZenGameState::deactivateHUD() {
 }
 
 void ZenGameState::setScore(int points) {
-	//_hud->setNumber(2, points);
-	LOG << "==> points: " << points;
-	_diff = points;
-	_scoreTimer = 0.0f;
+	_context->score.add(points);
+	_hud->setNumber(2, _context->score.points);
 }

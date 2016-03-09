@@ -66,6 +66,7 @@ public:
 	void kickTimer(float v) {
 		_timer += v;
 	}
+	void synch();
 private:	
 	const bool isValid(const ds::Point& p) const;
 	const bool isValid(int x, int y) const;

@@ -8,7 +8,7 @@ image {
 }
 button { 
     id : 0
-    pos : 400,240
+    pos : 400,200
     color : 255,255,255,255
     centered : true
     scale : 1
@@ -17,10 +17,106 @@ button {
 }
 button { 
     id : 1
-    pos : 400,150
+    pos : 400,120
     color : 255,255,255,255
     centered : true
     scale : 1
     rect : 260,500,300,50
     text : "Exit"
+}
+text { 
+    id : 11
+    pos : 512,580
+    color : 71,71,71,255
+    centered : true
+    scale : 1
+    text : "POINTS"
+}
+image { 
+    id : 12
+    pos : 512,540
+    color : 255,255,255,255
+    centered : true
+    scale : 1
+    rect : 150,0,250,40
+}
+text { 
+    id : 13
+    pos : 512,540
+    color : 255,255,255,255
+    centered : true
+    scale : 1
+    text : "002010"
+}
+text { 
+    id : 14
+    pos : 512,500
+    color : 71,71,71,255
+    centered : true
+    scale : 1
+    text : "Time"
+}
+image { 
+    id : 15
+    pos : 512,460
+    color : 255,255,255,255
+    centered : true
+    scale : 1
+    rect : 150,0,250,40
+}
+text { 
+    id : 16
+    pos : 512,460
+    color : 255,255,255,255
+    centered : true
+    scale : 1
+    text : "01:20"
+}
+text { 
+    id : 17
+    pos : 512,420
+    color : 71,71,71,255
+    centered : true
+    scale : 1
+    text : "Best move"
+}
+image { 
+    id : 18
+    pos : 512,380
+    color : 255,255,255,255
+    centered : true
+    scale : 1
+    rect : 150,0,250,40
+}
+text { 
+    id : 19
+    pos : 512,380
+    color : 255,255,255,255
+    centered : true
+    scale : 1
+    text : "8"
+}
+text { 
+    id : 20
+    pos : 512,340
+    color : 71,71,71,255
+    centered : true
+    scale : 1
+    text : "Total score"
+}
+image { 
+    id : 21
+    pos : 512,300
+    color : 255,255,255,255
+    centered : true
+    scale : 1
+    rect : 150,0,250,40
+}
+text { 
+    id : 22
+    pos : 512,300
+    color : 255,255,255,255
+    centered : true
+    scale : 1
+    text : "0010200"
 }

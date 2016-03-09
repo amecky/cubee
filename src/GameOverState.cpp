@@ -23,6 +23,10 @@ void GameOverState::render() {
 
 void GameOverState::activate() {
 	_gui->activate("GameOver");
+	// points 13
+	// time 16
+	// best move 19
+	// total 22
 }
 
 void GameOverState::deactivate() {

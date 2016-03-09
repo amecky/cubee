@@ -19,6 +19,7 @@ int MainGameState::update(float dt) {
 	}
 	else if (points == -1) {
 		// dead
+		return 666;
 	}
 	tick(dt);
 	//if ( m_Bucket.hasEvents()) {		
