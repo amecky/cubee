@@ -209,7 +209,12 @@ int Bucket::update(float elapsed) {
 			if (p != _lastUpdate && p != _selectedEntry) {
 				_lastUpdate = p;
 				const GridEntry& entry = m_Grid.get(p.x, p.y);
-				_world->startBehavior(entry.sid, "wiggle_scale");
+				if (_world->contains(entry.sid)) {
+					_world->startBehavior(entry.sid, "wiggle_scale");
+				}
+				else {
+					LOG << "INVALID sid: " << p.x << " " << p.y << " " << entry.sid;
+				}
 			}
 		}
 		return 0;
@@ -270,6 +275,7 @@ int Bucket::update(float elapsed) {
 		if (_timer > _context->settings->moveTTL) {
 			m_Mode = BK_RUNNING;
 			_timer = 0.0f;
+			debug();
 			synch();
 		}
 		return 0;
