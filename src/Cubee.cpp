@@ -5,11 +5,18 @@
 #include "ZenGameState.h"
 #include "ActionGameState.h"
 #include "GameOverState.h"
+#include <renderer\TGAImage.h>
 
 ds::BaseApp *app = new Cubee(); 
 
 Cubee::Cubee() : ds::BaseApp() {
 	//_CrtSetBreakAlloc(5376);
+}
+
+Cubee::~Cubee() {
+	delete _context->settings;
+	delete _context->bucket;
+	delete _context;
 }
 
 // -------------------------------------------------------
@@ -27,6 +34,22 @@ bool Cubee::loadContent() {
 	connectGameStates("ActionGameState", 666, "GameOverState");
 	connectGameStates("ZenGameState", 666, "GameOverState");
 	connectGameStates("GameOverState", 1, "MainMenuState");
+
+	//ds::TGAImage t;
+	//t.read_tga_file("content\\textures\\TextureArray.tga");
+
+	_context->leftBar = world->create(v2(294, 430), ds::math::buildTexture(0, 840, 6, 640));
+	_context->rightBar = world->create(v2(730, 430), ds::math::buildTexture(0, 840, 6, 640));
+	int i = 0;
+	for (int y = 0; y < GRID_SY; ++y) {
+		world->create(v2(512, START_Y + y * CELL_SIZE), ds::math::buildTexture(ds::Rect(0, 340, 448, 40)), OT_BORDER);
+	}
+	_context->bottomDivider = world->create(v2(512, 102), ds::math::buildTexture(250, 0, 400, 4));
+	_context->topDivider = world->create(v2(512, 754), ds::math::buildTexture(250, 0, 400, 4));
+
+	_context->bucket = new Bucket(_context);
+	_context->bucket->init();
+
 	return true;
 }
 

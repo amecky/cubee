@@ -4,6 +4,7 @@
 #include "GameContext.h"
 #include "Bucket.h"
 #include <dialogs\GUIDialog.h>
+#include <effects\ScreenShakeEffect.h>
 
 class MainGameState : public ds::GameState {
 
@@ -25,7 +26,8 @@ protected:
 	
 	GameContext* _context;
 	float _timer;
-	Bucket* _bucket;
+	
+	ds::ScreenShakeEffect* _effect;
 	
 };
 

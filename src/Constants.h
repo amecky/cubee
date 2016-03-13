@@ -5,7 +5,7 @@
 const int GRID_SX = 10;
 const int GRID_SY = 16;
 
-const int START_X = 332;
+const int START_X = 330;
 const int START_Y = 128;
 const int CELL_SIZE = 40;
 const int MAX_COLORS = 4;
@@ -20,3 +20,10 @@ const int OT_BORDER = 10;
 const int OT_REFILL = 11;
 const int OT_GRIDENTRY = 12;
 	
+const ds::Color BORDER_COLORS[] = {
+	ds::Color( 72, 255, 0, 255),
+	ds::Color(163, 209, 0, 255),
+	ds::Color(255, 162, 0, 255),
+	ds::Color(231, 116, 0, 255),
+	ds::Color(209,  70, 0, 255)
+};

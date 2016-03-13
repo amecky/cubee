@@ -19,57 +19,227 @@ ds::Point convert(const v2& screenPos) {
 }
 
 // -------------------------------------------------------
-// Grid
+// Mouse over state
 // -------------------------------------------------------
-Bucket::Bucket(GameContext* context) : _context(context) , _world(context->world) , m_Grid(GRID_SX,GRID_SY) , _timer(0.0f) , _useTimer(true) , _playMode(PM_ZEN) {		
+int MouseOverState::activate() {
+	_selectedEntry = INVALID_POINT;
+	_lastUpdate = INVALID_POINT;
+	return 0;
+}
+
+int MouseOverState::update(float dt) {
+	BucketContext* ctx = static_cast<BucketContext*>(_ctx);
+	v2 mp = ds::renderer::getMousePosition();
+	ds::Point p = convert(mp);
+	if (ctx->grid->isValid(p.x, p.y) && !ctx->grid->isFree(p.x, p.y)) {
+		if (p != _lastUpdate && p != _selectedEntry) {
+			_lastUpdate = p;
+			const GridEntry& entry = ctx->grid->get(p.x, p.y);
+			if (ctx->world->contains(entry.sid)) {
+				ctx->world->startBehavior(entry.sid, "wiggle_scale");
+			}
+			else {
+				LOG << "INVALID sid: " << p.x << " " << p.y << " " << entry.sid;
+			}
+		}
+	}
+	return 0;
+}
+
+// -------------------------------------------------------
+// swap cells state
+// -------------------------------------------------------
+int SwapCellsState::activate() {
+	BucketContext* ctx = static_cast<BucketContext*>(_ctx);
+	const GridEntry& f = ctx->grid->get(ctx->firstSwapPoint);
+	const GridEntry& s = ctx->grid->get(ctx->secondSwapPoint);
+	LOG << "swapping first: " << ctx->firstSwapPoint.x << " " << ctx->firstSwapPoint.y << " second: " << ctx->secondSwapPoint.x << " " << ctx->secondSwapPoint.y;
+	ctx->world->moveTo(f.sid, convert(ctx->firstSwapPoint), convert(ctx->secondSwapPoint), ctx->settings->swapTTL, 0, tweening::linear);
+	ctx->world->moveTo(s.sid, convert(ctx->secondSwapPoint), convert(ctx->firstSwapPoint), ctx->settings->swapTTL, 0, tweening::linear);
+	ctx->grid->swap(ctx->firstSwapPoint, ctx->secondSwapPoint);
+	return 0;
+}
+
+// -------------------------------------------------------
+// find matching
+// -------------------------------------------------------
+int SwapCellsState::findMatching(const ds::Point& p) {
+	BucketContext* ctx = static_cast<BucketContext*>(_ctx);
+	int total = 0;
+	ctx->points.clear();
+	ds::Array<ds::Point> points;
+	ctx->grid->findMatchingNeighbours(p.x, p.y, points);
+	if (points.size() > 2) {
+		total += points.size();
+		for (size_t i = 0; i < points.size(); ++i) {
+			const ds::Point& gp = points[i];
+			const GridEntry& c = ctx->grid->get(gp.x, gp.y);
+			ctx->points.push_back(points[i]);
+		}
+	}
+	LOG << "found " << total << " matching points at " << p.x << " " << p.y;
+	return total;
+}
+
+int SwapCellsState::deactivate() {
+	BucketContext* ctx = static_cast<BucketContext*>(_ctx);
+	int firstMatches = findMatching(ctx->firstSwapPoint);
+	int secondMatches = findMatching(ctx->secondSwapPoint);
+	LOG << "first matches: " << firstMatches << " second matches: " << secondMatches;
+	if (firstMatches < 2 || secondMatches < 2) {
+		return 1;
+	}
+	return 0;
+}
+
+int SwapBackCellsState::activate() {
+	BucketContext* ctx = static_cast<BucketContext*>(_ctx);
+	const GridEntry& f = ctx->grid->get(ctx->firstSwapPoint);
+	const GridEntry& s = ctx->grid->get(ctx->secondSwapPoint);
+	ctx->world->moveTo(f.sid, convert(ctx->firstSwapPoint), convert(ctx->secondSwapPoint), ctx->settings->swapTTL, 0, tweening::linear);
+	ctx->world->moveTo(s.sid, convert(ctx->secondSwapPoint), convert(ctx->firstSwapPoint), ctx->settings->swapTTL, 0, tweening::linear);
+	ctx->grid->swap(ctx->firstSwapPoint, ctx->secondSwapPoint);
+	return 0;
+}
+
+// -------------------------------------------------------
+// remove cells state
+// -------------------------------------------------------
+int RemoveCellsState::activate() {
+	BucketContext* ctx = static_cast<BucketContext*>(_ctx);
+	for (size_t i = 0; i < ctx->points.size(); ++i) {
+		const ds::Point& gp = ctx->points[i];
+		const GridEntry& c = ctx->grid->get(gp.x, gp.y);		
+		ctx->world->scaleTo(c.sid, v2(1, 1), v2(0.1f, 0.1f), 0.4f);
+	}
+	return 0;
+}
+
+int RemoveCellsState::deactivate() {
+	BucketContext* ctx = static_cast<BucketContext*>(_ctx);
+	ctx->grid->remove(ctx->points, false);
+	for (int i = 0; i < ctx->points.size(); ++i) {
+		const GridEntry& e = ctx->grid->get(ctx->points[i]);
+		LOG << i << " => removed " << DBG_PNT(ctx->points[i]) << " sid: " << e.sid;
+		ctx->world->remove(e.sid);
+	}
+	return 0;
+}
+
+// -------------------------------------------------------
+// drop cells state
+// -------------------------------------------------------
+int DropCellsState::activate() {
+	BucketContext* ctx = static_cast<BucketContext*>(_ctx);
+	ctx->droppedCells.clear();
+	ctx->grid->dropCells(ctx->droppedCells);
+	for (size_t i = 0; i < ctx->droppedCells.size(); ++i) {
+		const ds::DroppedCell<GridEntry>& dc = ctx->droppedCells[i];
+		LOG << i << " => dropped from " << dc.from.x << " " << dc.from.y << " to " << dc.to.x << " " << dc.to.y << " org: " << dc.data.sid;
+		v2 p = ctx->world->getPosition(dc.data.sid);
+		ctx->world->moveTo(dc.data.sid, convert(dc.from.x, dc.from.y), convert(dc.to.x, dc.to.y), ctx->settings->moveTTL);
+	}
+	return 0;
+}
+
+// -------------------------------------------------------
+// refill cells state
+// -------------------------------------------------------
+RefillCellsState::RefillCellsState(ds::StateContext* context) : ds::State(context) {
+	BucketContext* ctx = static_cast<BucketContext*>(_ctx);
+	for (int i = 0; i < GRID_SX; ++i) {
+		_refill[i] = ctx->world->create(v2(START_X + i * CELL_SIZE, REFILL_Y_POS), ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT, CELL_SIZE, CELL_SIZE)), OT_REFILL);
+		ctx->world->setColor(_refill[i], ds::Color(255, 255, 255, 128));
+	}
+}
+
+// -------------------------------------------------------
+// Move row upwards
+// -------------------------------------------------------
+void RefillCellsState::moveRow(int row) {
+	BucketContext* ctx = static_cast<BucketContext*>(_ctx);
+	for (int y = GRID_SY - 1; y > 0; --y) {
+		if (!ctx->grid->isFree(row, y - 1)) {
+			const GridEntry& entry = ctx->grid->get(row, y);
+			ctx->grid->set(row, y, ctx->grid->get(row, y - 1));
+			ctx->grid->remove(row, y - 1);
+			v2 s = convert(row, y - 1);
+			v2 e = convert(row, y);
+			if (ctx->world->contains(entry.sid)) {
+				ctx->world->moveTo(entry.sid, s, e, ctx->settings->moveTTL, 0, tweening::easeInOutQuad);
+			}
+		}
+	}
+}
+
+int RefillCellsState::activate() {	
+	BucketContext* ctx = static_cast<BucketContext*>(_ctx);
+	for (int i = 0; i < GRID_SX; ++i) {
+		moveRow(i);
+		ds::SID node = _refill[i];
+		int type = ctx->world->getType(node);
+		GridEntry entry;
+		entry.color = ctx->world->getType(node);
+		int offset = entry.color * CELL_SIZE;
+		entry.sid = ctx->world->create(convert(i, 0), ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT + offset, CELL_SIZE, CELL_SIZE)), OT_GRIDENTRY);
+		ctx->grid->set(i, 0, entry);
+		v2 s = v2(START_X + i * CELL_SIZE, REFILL_Y_POS);
+		v2 e = convert(i, 0);
+		ctx->world->moveTo(entry.sid, s, e, ctx->settings->moveTTL, 0, tweening::easeInOutQuad);
+	}
+	for (int i = 0; i < GRID_SX; ++i) {
+		int type = ds::math::random(0, MAX_COLORS - 1);
+		ctx->world->setType(_refill[i], type);
+		int offset = type * CELL_SIZE;
+		ctx->world->setTexture(_refill[i], ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT + offset, CELL_SIZE, CELL_SIZE)));
+		v2 s = v2(START_X + i * CELL_SIZE, REFILL_Y_POS);
+		v2 e = s;
+		e.y -= 100.0f;
+		ctx->world->moveTo(_refill[i], e, s, ctx->settings->moveTTL, 0, tweening::easeInOutQuad);
+	}
+	return 0;
+}
+
+// -------------------------------------------------------
+// Bucket
+// -------------------------------------------------------
+Bucket::Bucket(GameContext* context) : _context(context) , _world(context->world) , m_Grid(GRID_SX,GRID_SY) , _playMode(PM_ZEN) {		
 	//clear();
+	_bucketContext.world = _world;
+	_bucketContext.grid = &m_Grid;
+	_bucketContext.settings = _context->settings;
+	_states = new ds::StateManager(&_bucketContext);
+	_states->add<MouseOverState>();
+	_states->add<SwapCellsState>();
+	_states->add<SwapBackCellsState>();
+	_states->add<RemoveCellsState>();
+	_states->add<DropCellsState>();
+	_states->add<RefillCellsState>();
+	_states->addTransition(BK_SWAPPING, 1, BK_BACK_SWAPPING, 0.5f);
+	_states->addTransition(BK_SWAPPING, 0, BK_REMOVING, 0.5f);
+	_states->addTransition(BK_REMOVING, 0, BK_DROPPING, 0.5f);
+	_states->addTransition(BK_BACK_SWAPPING, 0, BK_RUNNING, 0.5f);
+	_states->addTransition(BK_DROPPING, 0, BK_REFILLING, 0.5f);
+	_states->addTransition(BK_REFILLING, 0, BK_RUNNING, 0.5f);
 }
 
-Bucket::~Bucket() {}
-
-void Bucket::toggleTimer() {
-	_useTimer = !_useTimer;
+Bucket::~Bucket() {
+	delete _states;
 }
+
 // -------------------------------------------------------
 // Init
 // -------------------------------------------------------
 void Bucket::init() {
 	
-	for ( int i = 0; i < GRID_SX; ++i ) {
-		_refill[i] = _world->create(v2(START_X + i * CELL_SIZE, REFILL_Y_POS), ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT, CELL_SIZE, CELL_SIZE)),OT_REFILL);
-		_world->setColor(_refill[i], ds::Color(255, 255, 255, 128));
-	}
-	
-
-	int i = 0;
-	for ( int y = 0; y < GRID_SY; ++y ) {		
-		_world->create(v2(512, START_Y + y * CELL_SIZE), ds::math::buildTexture(ds::Rect(0, 320, 440, 40)),OT_BORDER);
-	}
-	
-	//_bottomBar = _world->create(v2(512, 102), ds::math::buildTexture(240, 0, 100, 6));
-
-	m_TopBar.position = v2(512,START_Y + GRID_SY * CELL_SIZE - 15);
-	m_TopBar.texture = ds::math::buildTexture(ds::Rect(190, 0, 400, 10));
-
-	//_selection = _world->create(v2(START_X,START_Y),ds::math::buildTexture(SELECTION_RECT));
-	_selectedEntry = INVALID_POINT;
 }
 
 // -------------------------------------------------------
 // Clear grid
 // -------------------------------------------------------
 void Bucket::clear() {
-	for ( int x = 0; x < GRID_SX; ++x ) {
-		if (_refill[x] != ds::INVALID_SID) {
-			_world->remove(_refill[x]);
-		}
-	}
 	// FIXME: remove everything from _world
 	m_Grid.clear();
-	//m_FirstSelection.setActive(false);
-	m_Mode = BK_RUNNING;
-	m_Filled = 0;
-	_lastUpdate = INVALID_POINT;
 }
 
 // -------------------------------------------------------
@@ -78,11 +248,12 @@ void Bucket::clear() {
 
 void Bucket::fill(int minCol,int maxCol) {
 	for ( int x = 0; x < GRID_SX; ++x ) {
-		int pieces = ds::math::random(minCol,maxCol);
+		int pieces = ds::math::random(minCol,maxCol - 1);
 		fillRow(x,pieces);
 	}
+	_selectedEntry = INVALID_POINT;
 	calculateFillRate();
-	m_Mode = BK_RUNNING;
+	_states->activate(BK_RUNNING);
 }
 
 // -------------------------------------------------------
@@ -113,78 +284,49 @@ bool Bucket::isRowFull(int row) {
 	}
 	return cnt == 0;
 }
-// -------------------------------------------------------
-// Move row upwards
-// -------------------------------------------------------
-void Bucket::moveRow(int row) {
-	for ( int y = GRID_SY - 1; y > 0; --y ) {
-		if ( !m_Grid.isFree(row,y-1) ) {
-			const GridEntry& entry = m_Grid.get(row, y);
-			m_Grid.set(row,y,m_Grid.get(row,y-1));
-			m_Grid.remove(row,y-1);		
-			v2 s = convert(row, y - 1);
-			v2 e = convert(row, y);
-			if (_world->contains(entry.sid)) {
-				_world->moveTo(entry.sid, s, e, _context->settings->moveTTL, 0, tweening::easeInOutQuad);
-			}
-		}
-	}
-}
+
 
 // -------------------------------------------------------
 // Refill
 // -------------------------------------------------------
 bool Bucket::refill(int pieces,bool move) {
-	// move current refill nodes to nodes
-	if ( move ) {
-		for ( int i = 0; i < GRID_SX; ++i ) {
-			moveRow(i);
-			ds::SID node = _refill[i];
-			int type = _world->getType(node);
-			GridEntry entry;
-			entry.color = _world->getType(node);
-			int offset = entry.color * CELL_SIZE;
-			entry.sid = _world->create(convert(i, 0), ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT + offset, CELL_SIZE, CELL_SIZE)), OT_GRIDENTRY);
-			m_Grid.set(i, 0, entry);
-			v2 s = v2(START_X + i * CELL_SIZE, REFILL_Y_POS);
-			v2 e = convert(i, 0);
-			_world->moveTo(entry.sid, s, e, _context->settings->moveTTL, 0, tweening::easeInOutQuad);
-			// if row is full we cannot refill and game is over
-			if (isRowFull(i)) {
-				LOG << "Row " << i << " is full";
-				return false;
-			}
-		}
-		m_Mode = BK_REFILLING;
-	}	
-	for ( int i = 0; i < GRID_SX; ++i ) {
-		int type = ds::math::random(0,MAX_COLORS-1);
-		_world->setType(_refill[i], type);
-		int offset = type * CELL_SIZE;
-		_world->setTexture(_refill[i], ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT + offset, CELL_SIZE, CELL_SIZE)));
-		v2 s = v2(START_X + i * CELL_SIZE, REFILL_Y_POS);
-		v2 e = s;
-		e.y -= 100.0f;
-		_world->moveTo(_refill[i], e, s, _context->settings->moveTTL, 0, tweening::easeInOutQuad);
-	}
+	_states->activate(BK_REFILLING);
 	return true;
 }
 // -------------------------------------------------------
 // Calculate fill rate
 // -------------------------------------------------------
 void Bucket::calculateFillRate() {
-	m_Filled = 0;
+	_context->score.filled = 0;
 	for ( int x = 0; x < GRID_SX; ++x ) {
 		for ( int y = 0; y < GRID_SY; ++y ) {			
 			if ( !m_Grid.isFree(x,y)) {
-				++m_Filled;
+				++_context->score.filled;
 			}
 		}
 	}
-	LOG << "filled " << m_Filled;
-	float percentage = static_cast<float>(m_Filled) / (static_cast<float>(GRID_SX) * static_cast<float>(GRID_SY)) * 100.0f;
+	LOG << "filled " << _context->score.filled;
+	float percentage = static_cast<float>(_context->score.filled) / (static_cast<float>(GRID_SX)* static_cast<float>(GRID_SY)) * 100.0f;
 	LOG << "percentage " << percentage;
-	m_PercentFilled = static_cast<int>(percentage);
+	int lookup = percentage / 20;
+	_world->setColor(_context->leftBar, BORDER_COLORS[lookup]);
+	_world->setColor(_context->rightBar, BORDER_COLORS[lookup]);
+	_context->score.percentFilled = static_cast<int>(percentage);
+	// find max height
+	// set texture for left bar
+	int mc = m_Grid.getMaxColumn() + 1;
+	if (mc > GRID_SY) {
+		mc = GRID_SY;
+	}
+	int th = CELL_SIZE * mc;
+	_world->setTexture(_context->leftBar, ds::math::buildTexture(0, 840, 6, th));
+	_world->setTexture(_context->rightBar, ds::math::buildTexture(0, 840, 6, th));
+	// set position for left bar
+	v2 org = v2(294, 430);
+	int yp = 110 + th / 2;
+	LOG << "mc: " << mc << " th: " << th << " yp: " << yp;
+	_world->setPosition(_context->leftBar, v2(294, yp));
+	_world->setPosition(_context->rightBar, v2(730, yp));
 }
 
 
@@ -193,130 +335,7 @@ void Bucket::calculateFillRate() {
 // Update
 // -------------------------------------------------------
 int Bucket::update(float elapsed) {
-
-	if (_useTimer) {
-		ds::renderer::print(v2(10, 10), "Timer: ON", ds::Color::BLACK);
-	}
-	else {
-		ds::renderer::print(v2(10, 10), "Timer: OFF", ds::Color::BLACK);
-	}
-	ds::renderer::print(v2(10, 30), translate(m_Mode), ds::Color::BLACK);
-
-	if (m_Mode == BK_RUNNING) {
-		v2 mp = ds::renderer::getMousePosition();
-		ds::Point p = convert(mp);
-		if (isValid(p.x, p.y) && isUsed(p.x, p.y)) {
-			if (p != _lastUpdate && p != _selectedEntry) {
-				_lastUpdate = p;
-				const GridEntry& entry = m_Grid.get(p.x, p.y);
-				if (_world->contains(entry.sid)) {
-					_world->startBehavior(entry.sid, "wiggle_scale");
-				}
-				else {
-					LOG << "INVALID sid: " << p.x << " " << p.y << " " << entry.sid;
-				}
-			}
-		}
-		return 0;
-	}
-	else if (m_Mode == BK_GLOWING) {
-		if (_useTimer) {
-			_timer += elapsed;
-		}
-		if (_timer > _context->settings->moveTTL) {
-			m_Mode = BK_DROPPING;
-			_timer = 0.0f;
-			m_Grid.remove(m_Points,false);
-			for (int i = 0; i < m_Points.size(); ++i) {
-				const GridEntry& e = m_Grid.get(m_Points[i]);
-				LOG << i << " => removed " << m_Points[i].x << " " << m_Points[i].y << " sid: " << e.sid;
-				_world->remove(e.sid);
-			}
-		}
-		return 0;
-	}
-	else if (m_Mode == BK_DROPPING) {
-		if (_useTimer) {
-			_timer += elapsed;
-		}
-		if (_timer > _context->settings->moveTTL) {
-			m_Mode = BK_MOVING;
-			_droppedCells.clear();
-			m_Grid.dropCells(_droppedCells);
-			for (size_t i = 0; i < _droppedCells.size(); ++i) {
-				const ds::DroppedCell<GridEntry>& dc = _droppedCells[i];				
-				LOG << i << " => dropped from " << dc.from.x << " " << dc.from.y << " to " << dc.to.x << " " << dc.to.y << " org: " << dc.data.sid;
-				v2 p = _world->getPosition(dc.data.sid);
-				_world->moveTo(dc.data.sid, convert(dc.from.x,dc.from.y), convert(dc.to.x,dc.to.y), _context->settings->moveTTL);
-			}
-			int points = m_Points.size();
-			m_Points.clear();
-			_timer = 0.0f;
-			return points;
-		}
-	}
-	else if (m_Mode == BK_MOVING) {
-		if (_useTimer) {
-			_timer += elapsed;
-		}
-		if (_timer > _context->settings->moveTTL) {
-			if (!refill(GRID_SX)) {
-				return -1;
-			}
-			m_Mode = BK_REFILLING;
-			_timer = 0.0f;
-		}
-		return 0;
-	}
-	else if (m_Mode == BK_REFILLING) {
-		if (_useTimer) {
-			_timer += elapsed;
-		}
-		if (_timer > _context->settings->moveTTL) {
-			m_Mode = BK_RUNNING;
-			_timer = 0.0f;
-			debug();
-			synch();
-		}
-		return 0;
-	}
-	else if (m_Mode == BK_SWAPPING) {
-		if (_useTimer) {
-			_timer += elapsed;
-		}
-		if (_timer > _context->settings->swapTTL) {
-			m_Points.clear();
-			int total = findMatching(_firstSwapPoint);
-			total += findMatching(_secondSwapPoint);
-			if ( total == 0 ) {
-				m_Mode = BK_BACK_SWAPPING;
-				const GridEntry& f = m_Grid.get(_firstSwapPoint);
-				const GridEntry& s = m_Grid.get(_secondSwapPoint);
-				_world->moveTo(f.sid, convert(_firstSwapPoint), convert(_secondSwapPoint), _context->settings->swapTTL, 0, tweening::linear);
-				_world->moveTo(s.sid, convert(_secondSwapPoint), convert(_firstSwapPoint), _context->settings->swapTTL, 0, tweening::linear);
-				m_Grid.swap(_firstSwapPoint, _secondSwapPoint);
-			}
-			else {
-				_timer = 0.0f;
-				m_Mode = BK_GLOWING;
-				for (int i = 0; i < m_Points.size(); ++i) {
-					const GridEntry& e = m_Grid.get(m_Points[i]);
-					_world->startBehavior(e.sid, "fade_scale");
-				}
-			}
-		}
-		return 0;
-	}
-	else if (m_Mode == BK_BACK_SWAPPING) {
-		if (_useTimer) {
-			_timer += elapsed;
-		}
-		if (_timer > _context->settings->swapTTL) {			
-			m_Mode = BK_RUNNING;
-			_timer = 0.0f;
-		}
-		return 0;
-	}
+	_states->tick(elapsed);
 	return 0;
 }
 
@@ -364,37 +383,12 @@ const bool Bucket::isUsed(const ds::Point& p) const {
 // Swap cells
 // -------------------------------------------------------
 int Bucket::swapCells(const ds::Point& first, const ds::Point& second) {
-	if (first != second) {
-		const GridEntry& f = m_Grid.get(first);
-		const GridEntry& s = m_Grid.get(second);
-		_world->moveTo(f.sid, convert(first), convert(second), _context->settings->swapTTL, 0, tweening::linear);
-		_world->moveTo(s.sid, convert(second), convert(first), _context->settings->swapTTL, 0, tweening::linear);
-		m_Grid.swap(first, second);
-		m_Mode = BK_SWAPPING;
-		_timer = 0.0f;
-		_firstSwapPoint = first;
-		_secondSwapPoint = second;
+	if (first != second) {		
+		_bucketContext.firstSwapPoint = first;
+		_bucketContext.secondSwapPoint = second;
+		_states->activate(BK_SWAPPING);
 	}
 	return 0;
-}
-
-// -------------------------------------------------------
-// find matching
-// -------------------------------------------------------
-int Bucket::findMatching(const ds::Point& p) {
-	int total = 0;
-	ds::Array<ds::Point> points;
-	m_Grid.findMatchingNeighbours(p.x,p.y,points);
-	if ( points.size() > 2 ) {
-		total += points.size();
-		for ( size_t i = 0; i < points.size(); ++i ) {
-			const ds::Point& gp = points[i];
-			const GridEntry& c = m_Grid.get(gp.x,gp.y);
-			m_Points.push_back(points[i]);
-			_world->scaleTo(c.sid, v2(1, 1), v2(0.1f, 0.1f), 0.4f);
-		}
-	}
-	return total;
 }
 
 // -------------------------------------------------------
@@ -404,7 +398,7 @@ int Bucket::selectCell() {
 	int ret = -1;
 	v2 mp = ds::renderer::getMousePosition();
 	ds::Point p = convert(mp);
-	if ( m_Mode == BK_RUNNING ) {		
+	if ( _states->getCurrentMode() == BK_RUNNING ) {		
 		if ( isValid(p) && isUsed(p)) {
 			if (_selectedEntry == INVALID_POINT) {
 				_selectedEntry = p;
@@ -421,10 +415,6 @@ int Bucket::selectCell() {
 				_world->scale(entry.sid, 1.0f, 1.0f);
 				ret = swapCells(p,_selectedEntry);
 				LOG << "--------> RET: " << ret;
-				if ( ret > 0 ) {
-					_timer = 0.0f;
-					m_Mode = BK_GLOWING;
-				}
 				_selectedEntry = INVALID_POINT;
 			}
 		}
@@ -446,12 +436,13 @@ void Bucket::debug() {
 		sprintf(buffer,"%2d | ", y);
 		tmp += buffer;
 		for (int x = 0; x < GRID_SX; ++x) {
+			const GridEntry& e = m_Grid.get(x, y);
 			if (m_Grid.isFree(x, y)) {
-				sprintf_s(buffer, 32, "-------- ");
+				sprintf_s(buffer, 32, "-- (%3d) ",e.sid);
 			}
 			else {
-				const GridEntry& e = m_Grid.get(x, y);
-				sprintf_s(buffer, 32, "%2d (%3d) ", e.color, e.sid);				
+				//const GridEntry& e = m_Grid.get(x, y);
+				sprintf_s(buffer, 32, "%s (%3d) ", translateColor(e.color), e.sid);				
 			}
 			tmp += buffer;
 		}
@@ -466,18 +457,17 @@ void Bucket::debug() {
 	LOG << tmp;	
 }
 
-const char* Bucket::translate(BucketMode mode) {
-	switch (mode) {
-		case BK_RUNNING: return "Running"; break;
-		case BK_MOVING: return "Moving"; break;
-		case BK_GLOWING: return "Glowing"; break;
-		case BK_REFILLING: return "Refilling"; break;
-		case BK_SWAPPING: return "Swapping"; break;
-		case BK_BACK_SWAPPING: return "BackSwapping"; break;
-		case BK_DROPPING: return "Dropping"; break;
-		default: return "UNKNOWN";
+const char* Bucket::translateColor(int color) const {
+	switch (color) {
+		case 0: return "RD"; break;
+		case 1: return "TQ"; break;
+		case 2: return "YL"; break;
+		case 3: return "GR"; break;
+		default: return "UK"; break;
 	}
 }
+
+
 
 bool Bucket::containsGridEntry(ds::SID sid) {
 	for (int x = 0; x < GRID_SX; ++x) {

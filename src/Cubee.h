@@ -16,9 +16,7 @@ class Cubee : public ds::BaseApp {
 
 public:	
 	Cubee();
-	virtual ~Cubee() {
-		delete _context;
-	}	
+	virtual ~Cubee();
 	bool loadContent();
 	const char* getTitle() {
 		return "Cubee";

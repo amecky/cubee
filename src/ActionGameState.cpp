@@ -11,7 +11,7 @@ void ActionGameState::tick(float dt) {
 	if (_refillTimer > _context->settings->refillTimer) {
 		_hud->resetTimer(5);
 		_refillTimer = 0.0f;
-		_bucket->refill(GRID_SX, true);
+		_context->bucket->refill(GRID_SX, true);
 	}
 }
 
