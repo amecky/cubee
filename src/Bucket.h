@@ -18,6 +18,7 @@ enum BucketMode {
 	BK_SWAPPING,
 	BK_BACK_SWAPPING,
 	BK_DROPPING,
+	BK_FILLRATE,
 	BK_NONE
 };
 
@@ -29,6 +30,7 @@ struct BucketContext : public ds::StateContext {
 	ds::Point firstSwapPoint;
 	ds::Point secondSwapPoint;
 	GameSettings* settings;
+	Score* score;
 };
 
 class MouseOverState : public ds::State {
@@ -126,6 +128,21 @@ private:
 	void moveRow(int row);
 	ds::SID _refill[GRID_SX];
 };
+
+class FillRateState : public ds::State {
+
+public:
+	FillRateState(ds::StateContext* context) : ds::State(context) {}
+	virtual ~FillRateState() {}
+	int activate();
+	int getMode() const {
+		return BK_FILLRATE;
+	}
+	const char* getName() const {
+		return "FillRateState";
+	}
+};
+
 
 // -------------------------------------------------------
 // Bucket

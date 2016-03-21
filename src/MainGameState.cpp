@@ -34,7 +34,7 @@ void MainGameState::render() {
 
 void MainGameState::activate() {
 	_context->bucket->fill(2, 6);
-	//_bucket->refill(GRID_SX, false);
+	_context->bucket->refill(GRID_SX, false);
 	activateHUD();
 	_context->score.reset();
 	_timer = 0.0f;

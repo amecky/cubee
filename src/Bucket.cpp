@@ -148,7 +148,10 @@ int DropCellsState::activate() {
 RefillCellsState::RefillCellsState(ds::StateContext* context) : ds::State(context) {
 	BucketContext* ctx = static_cast<BucketContext*>(_ctx);
 	for (int i = 0; i < GRID_SX; ++i) {
-		_refill[i] = ctx->world->create(v2(START_X + i * CELL_SIZE, REFILL_Y_POS), ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT, CELL_SIZE, CELL_SIZE)), OT_REFILL);
+		int type = ds::math::random(0, MAX_COLORS - 1);		
+		int offset = type * CELL_SIZE;
+		_refill[i] = ctx->world->create(v2(START_X + i * CELL_SIZE, REFILL_Y_POS), ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT + offset, CELL_SIZE, CELL_SIZE)), OT_REFILL);
+		ctx->world->setType(_refill[i], type);
 		ctx->world->setColor(_refill[i], ds::Color(255, 255, 255, 128));
 	}
 }
@@ -180,6 +183,7 @@ int RefillCellsState::activate() {
 		int type = ctx->world->getType(node);
 		GridEntry entry;
 		entry.color = ctx->world->getType(node);
+		XASSERT(entry.color < MAX_COLORS, "Color out of range: %d", entry.color);
 		int offset = entry.color * CELL_SIZE;
 		entry.sid = ctx->world->create(convert(i, 0), ds::math::buildTexture(ds::Rect(BLOCK_TOP, BLOCK_LEFT + offset, CELL_SIZE, CELL_SIZE)), OT_GRIDENTRY);
 		ctx->grid->set(i, 0, entry);
@@ -200,6 +204,42 @@ int RefillCellsState::activate() {
 	return 0;
 }
 
+
+int FillRateState::activate() {
+	BucketContext* ctx = static_cast<BucketContext*>(_ctx);
+	ctx->score->filled = 0;
+	for (int x = 0; x < GRID_SX; ++x) {
+		for (int y = 0; y < GRID_SY; ++y) {
+			if (!ctx->grid->isFree(x, y)) {
+				++ctx->score->filled;
+			}
+		}
+	}
+	LOG << "filled " << ctx->score->filled;
+	float percentage = static_cast<float>(ctx->score->filled) / (static_cast<float>(GRID_SX)* static_cast<float>(GRID_SY)) * 100.0f;
+	LOG << "percentage " << percentage;
+	int lookup = percentage / 20;
+	ctx->world->setColor(_context->leftBar, BORDER_COLORS[lookup]);
+	ctx->world->setColor(_context->rightBar, BORDER_COLORS[lookup]);
+	ctx->score->percentFilled = static_cast<int>(percentage);
+	// find max height
+	// set texture for left bar
+	int mc = ctx->grid->getMaxColumn() + 1;
+	if (mc > GRID_SY) {
+		mc = GRID_SY;
+	}
+	int th = CELL_SIZE * mc;
+	ctx->world->setTexture(_context->leftBar, ds::math::buildTexture(0, 840, 6, th));
+	ctx->world->setTexture(_context->rightBar, ds::math::buildTexture(0, 840, 6, th));
+	// set position for left bar
+	v2 org = v2(294, 430);
+	int yp = 110 + th / 2;
+	LOG << "mc: " << mc << " th: " << th << " yp: " << yp;
+	ctx->world->setPosition(_context->leftBar, v2(294, yp));
+	ctx->world->setPosition(_context->rightBar, v2(730, yp));
+	return 0;
+}
+
 // -------------------------------------------------------
 // Bucket
 // -------------------------------------------------------
@@ -208,6 +248,7 @@ Bucket::Bucket(GameContext* context) : _context(context) , _world(context->world
 	_bucketContext.world = _world;
 	_bucketContext.grid = &m_Grid;
 	_bucketContext.settings = _context->settings;
+	_bucketContext.score = &_context->score;
 	_states = new ds::StateManager(&_bucketContext);
 	_states->add<MouseOverState>();
 	_states->add<SwapCellsState>();
@@ -215,12 +256,14 @@ Bucket::Bucket(GameContext* context) : _context(context) , _world(context->world
 	_states->add<RemoveCellsState>();
 	_states->add<DropCellsState>();
 	_states->add<RefillCellsState>();
+	_states->add<FillRateState>();
 	_states->addTransition(BK_SWAPPING, 1, BK_BACK_SWAPPING, 0.5f);
 	_states->addTransition(BK_SWAPPING, 0, BK_REMOVING, 0.5f);
 	_states->addTransition(BK_REMOVING, 0, BK_DROPPING, 0.5f);
 	_states->addTransition(BK_BACK_SWAPPING, 0, BK_RUNNING, 0.5f);
 	_states->addTransition(BK_DROPPING, 0, BK_REFILLING, 0.5f);
-	_states->addTransition(BK_REFILLING, 0, BK_RUNNING, 0.5f);
+	_states->addTransition(BK_REFILLING, 0, BK_FILLRATE, 0.5f);
+	_states->addTransition(BK_FILLRATE, 0, BK_RUNNING, 0.0f);
 }
 
 Bucket::~Bucket() {
@@ -297,36 +340,7 @@ bool Bucket::refill(int pieces,bool move) {
 // Calculate fill rate
 // -------------------------------------------------------
 void Bucket::calculateFillRate() {
-	_context->score.filled = 0;
-	for ( int x = 0; x < GRID_SX; ++x ) {
-		for ( int y = 0; y < GRID_SY; ++y ) {			
-			if ( !m_Grid.isFree(x,y)) {
-				++_context->score.filled;
-			}
-		}
-	}
-	LOG << "filled " << _context->score.filled;
-	float percentage = static_cast<float>(_context->score.filled) / (static_cast<float>(GRID_SX)* static_cast<float>(GRID_SY)) * 100.0f;
-	LOG << "percentage " << percentage;
-	int lookup = percentage / 20;
-	_world->setColor(_context->leftBar, BORDER_COLORS[lookup]);
-	_world->setColor(_context->rightBar, BORDER_COLORS[lookup]);
-	_context->score.percentFilled = static_cast<int>(percentage);
-	// find max height
-	// set texture for left bar
-	int mc = m_Grid.getMaxColumn() + 1;
-	if (mc > GRID_SY) {
-		mc = GRID_SY;
-	}
-	int th = CELL_SIZE * mc;
-	_world->setTexture(_context->leftBar, ds::math::buildTexture(0, 840, 6, th));
-	_world->setTexture(_context->rightBar, ds::math::buildTexture(0, 840, 6, th));
-	// set position for left bar
-	v2 org = v2(294, 430);
-	int yp = 110 + th / 2;
-	LOG << "mc: " << mc << " th: " << th << " yp: " << yp;
-	_world->setPosition(_context->leftBar, v2(294, yp));
-	_world->setPosition(_context->rightBar, v2(730, yp));
+	
 }
 
 
