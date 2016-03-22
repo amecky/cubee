@@ -2,5 +2,7 @@ settings {
 	swap_ttl : 0.2
 	move_ttl : 0.2
 	refill_timer : 10
-
+	refill_ttl : 0.2
+	drop_ttl : 0.2
+	remove_ttl : 0.2
 }

@@ -110,7 +110,7 @@ int RemoveCellsState::activate() {
 	for (size_t i = 0; i < ctx->points.size(); ++i) {
 		const ds::Point& gp = ctx->points[i];
 		const GridEntry& c = ctx->grid->get(gp.x, gp.y);		
-		ctx->world->scaleTo(c.sid, v2(1, 1), v2(0.1f, 0.1f), 0.4f);
+		ctx->world->scaleTo(c.sid, v2(1, 1), v2(0.1f, 0.1f), ctx->settings->removeTTL);
 	}
 	return 0;
 }
@@ -137,7 +137,7 @@ int DropCellsState::activate() {
 		const ds::DroppedCell<GridEntry>& dc = ctx->droppedCells[i];
 		LOG << i << " => dropped from " << dc.from.x << " " << dc.from.y << " to " << dc.to.x << " " << dc.to.y << " org: " << dc.data.sid;
 		v2 p = ctx->world->getPosition(dc.data.sid);
-		ctx->world->moveTo(dc.data.sid, convert(dc.from.x, dc.from.y), convert(dc.to.x, dc.to.y), ctx->settings->moveTTL);
+		ctx->world->moveTo(dc.data.sid, convert(dc.from.x, dc.from.y), convert(dc.to.x, dc.to.y), ctx->settings->dropTTL);
 	}
 	return 0;
 }
@@ -169,7 +169,7 @@ void RefillCellsState::moveRow(int row) {
 			v2 s = convert(row, y - 1);
 			v2 e = convert(row, y);
 			if (ctx->world->contains(entry.sid)) {
-				ctx->world->moveTo(entry.sid, s, e, ctx->settings->moveTTL, 0, tweening::easeInOutQuad);
+				ctx->world->moveTo(entry.sid, s, e, ctx->settings->refillTTL, 0, tweening::easeInOutQuad);
 			}
 		}
 	}
@@ -193,7 +193,7 @@ int RefillCellsState::activate() {
 			ctx->grid->set(i, 0, entry);
 			v2 s = v2(START_X + i * CELL_SIZE, REFILL_Y_POS);
 			v2 e = convert(i, 0);
-			ctx->world->moveTo(entry.sid, s, e, ctx->settings->moveTTL, 0, tweening::easeInOutQuad);
+			ctx->world->moveTo(entry.sid, s, e, ctx->settings->refillTTL, 0, tweening::easeInOutQuad);
 		}
 		for (int i = 0; i < GRID_SX; ++i) {
 			int type = ds::math::random(0, MAX_COLORS - 1);
@@ -203,7 +203,7 @@ int RefillCellsState::activate() {
 			v2 s = v2(START_X + i * CELL_SIZE, REFILL_Y_POS);
 			v2 e = s;
 			e.y -= 100.0f;
-			ctx->world->moveTo(_refill[i], e, s, ctx->settings->moveTTL, 0, tweening::easeInOutQuad);
+			ctx->world->moveTo(_refill[i], e, s, ctx->settings->refillTTL, 0, tweening::easeInOutQuad);
 		}
 		sendEvent(BE_CALC_FILLRATE);
 	}
@@ -225,14 +225,12 @@ Bucket::Bucket(GameContext* context) : _context(context) , _world(context->world
 	_states->add<RemoveCellsState>();
 	_states->add<DropCellsState>();
 	_states->add<RefillCellsState>();
-	//_states->add<FillRateState>();
-	_states->addTransition(BK_SWAPPING, 1, BK_BACK_SWAPPING, 0.5f);
-	_states->addTransition(BK_SWAPPING, 0, BK_REMOVING, 0.5f);
-	_states->addTransition(BK_REMOVING, 0, BK_DROPPING, 0.5f);
-	_states->addTransition(BK_BACK_SWAPPING, 0, BK_RUNNING, 0.5f);
-	_states->addTransition(BK_DROPPING, 0, BK_REFILLING, 0.5f);
-	_states->addTransition(BK_REFILLING, 0, BK_RUNNING, 0.5f);
-	//_states->addTransition(BK_FILLRATE, 0, BK_RUNNING, 0.0f);
+	_states->addTransition(BK_SWAPPING, 1, BK_BACK_SWAPPING, _context->settings->swapTTL);
+	_states->addTransition(BK_SWAPPING, 0, BK_REMOVING, _context->settings->swapTTL);
+	_states->addTransition(BK_REMOVING, 0, BK_DROPPING, _context->settings->removeTTL);
+	_states->addTransition(BK_BACK_SWAPPING, 0, BK_RUNNING, _context->settings->swapTTL);
+	_states->addTransition(BK_DROPPING, 0, BK_REFILLING, _context->settings->dropTTL);
+	_states->addTransition(BK_REFILLING, 0, BK_RUNNING, _context->settings->refillTTL);
 }
 
 Bucket::~Bucket() {
@@ -317,15 +315,11 @@ void Bucket::calculateFillRate() {
 			}
 		}
 	}
-	LOG << "filled " << _context->score.filled;
 	float percentage = static_cast<float>(_context->score.filled) / (static_cast<float>(GRID_SX)* static_cast<float>(GRID_SY)) * 100.0f;
-	LOG << "percentage " << percentage;
 	int lookup = percentage / 20;
 	_world->setColor(_context->leftBar, BORDER_COLORS[lookup]);
 	_world->setColor(_context->rightBar, BORDER_COLORS[lookup]);
 	_context->score.percentFilled = static_cast<int>(percentage);
-	// find max height
-	// set texture for left bar
 	int mc = m_Grid.getMaxColumn() + 1;
 	if (mc > GRID_SY) {
 		mc = GRID_SY;
@@ -333,10 +327,8 @@ void Bucket::calculateFillRate() {
 	int th = CELL_SIZE * mc;
 	_world->setTexture(_context->leftBar, ds::math::buildTexture(0, 840, 6, th));
 	_world->setTexture(_context->rightBar, ds::math::buildTexture(0, 840, 6, th));
-	// set position for left bar
 	v2 org = v2(294, 430);
 	int yp = 110 + th / 2;
-	LOG << "mc: " << mc << " th: " << th << " yp: " << yp;
 	_world->setPosition(_context->leftBar, v2(294, yp));
 	_world->setPosition(_context->rightBar, v2(730, yp));
 }
@@ -431,6 +423,7 @@ int Bucket::selectCell() {
 				//_world->scale(entry.sid, 1.2f, 1.2f);				
 			}	
 			else if (_selectedEntry == p) {
+				_world->remove(_selection);
 				const GridEntry& entry = m_Grid.get(_selectedEntry);
 				_world->scale(entry.sid, 1.0f, 1.0f);
 				_selectedEntry = INVALID_POINT;
@@ -441,9 +434,11 @@ int Bucket::selectCell() {
 				ret = swapCells(p,_selectedEntry);
 				LOG << "--------> RET: " << ret;
 				_selectedEntry = INVALID_POINT;
+				_world->remove(_selection);
 			}
 		}
 		else {
+			_world->remove(_selection);
 			_selectedEntry = INVALID_POINT;
 		}
 	}
