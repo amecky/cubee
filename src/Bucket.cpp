@@ -65,8 +65,7 @@ int SwapCellsState::activate() {
 // -------------------------------------------------------
 int SwapCellsState::findMatching(const ds::Point& p) {
 	BucketContext* ctx = static_cast<BucketContext*>(_ctx);
-	int total = 0;
-	ctx->points.clear();
+	int total = 0;	
 	ds::Array<ds::Point> points;
 	ctx->grid->findMatchingNeighbours(p.x, p.y, points);
 	if (points.size() > 2) {
@@ -83,6 +82,7 @@ int SwapCellsState::findMatching(const ds::Point& p) {
 
 int SwapCellsState::deactivate() {
 	BucketContext* ctx = static_cast<BucketContext*>(_ctx);
+	ctx->points.clear();
 	int firstMatches = findMatching(ctx->firstSwapPoint);
 	int secondMatches = findMatching(ctx->secondSwapPoint);
 	LOG << "first matches: " << firstMatches << " second matches: " << secondMatches;
@@ -426,8 +426,9 @@ int Bucket::selectCell() {
 		if ( isValid(p) && isUsed(p)) {
 			if (_selectedEntry == INVALID_POINT) {
 				_selectedEntry = p;
-				const GridEntry& entry = m_Grid.get(p);
-				_world->scale(entry.sid, 1.2f, 1.2f);				
+				_selection = _world->create(convert(p), ds::math::buildTexture(0, 80, 48, 48));
+				//const GridEntry& entry = m_Grid.get(p);
+				//_world->scale(entry.sid, 1.2f, 1.2f);				
 			}	
 			else if (_selectedEntry == p) {
 				const GridEntry& entry = m_Grid.get(_selectedEntry);

@@ -159,6 +159,7 @@ private:
 	void calculateFillRate();
 	const char* translateColor(int color) const;
 
+	ds::SID _selection;
 	GameContext* _context;
 	ds::World* _world;
 	ds::Point _selectedEntry;
