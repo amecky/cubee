@@ -27,3 +27,10 @@ const ds::Color BORDER_COLORS[] = {
 	ds::Color(231, 116, 0, 255),
 	ds::Color(209,  70, 0, 255)
 };
+
+enum BucketEvents {
+	BE_NONE,
+	BE_CALC_FILLRATE,
+	BE_BUCKET_FULL,
+	BE_EOL
+};

@@ -6,6 +6,7 @@
 #include "ActionGameState.h"
 #include "GameOverState.h"
 #include <renderer\TGAImage.h>
+#include <stdint.h>
 
 ds::BaseApp *app = new Cubee(); 
 
@@ -50,6 +51,7 @@ bool Cubee::loadContent() {
 	_context->bucket = new Bucket(_context);
 	_context->bucket->init();
 
+	uint8_t uc = 127;
 	return true;
 }
 

@@ -30,13 +30,12 @@ struct BucketContext : public ds::StateContext {
 	ds::Point firstSwapPoint;
 	ds::Point secondSwapPoint;
 	GameSettings* settings;
-	Score* score;
 };
 
 class MouseOverState : public ds::State {
 
 public:
-	MouseOverState(ds::StateContext* context) : ds::State(context), _selectedEntry(-1, -1), _lastUpdate(-1, -1) {}
+	MouseOverState() : ds::State(), _selectedEntry(-1, -1), _lastUpdate(-1, -1) {}
 	virtual ~MouseOverState() {}
 	int activate();
 	int update(float dt);
@@ -54,7 +53,7 @@ private:
 class SwapCellsState : public ds::State {
 
 public:
-	SwapCellsState(ds::StateContext* context) : ds::State(context) {}
+	SwapCellsState() : ds::State() {}
 	virtual ~SwapCellsState() {}
 	int activate();
 	int deactivate();
@@ -71,7 +70,7 @@ private:
 class SwapBackCellsState : public ds::State {
 
 public:
-	SwapBackCellsState(ds::StateContext* context) : ds::State(context) {}
+	SwapBackCellsState() : ds::State() {}
 	virtual ~SwapBackCellsState() {}
 	int activate();
 	int getMode() const {
@@ -85,7 +84,7 @@ public:
 class RemoveCellsState : public ds::State {
 
 public:
-	RemoveCellsState(ds::StateContext* context) : ds::State(context) {}
+	RemoveCellsState() : ds::State() {}
 	virtual ~RemoveCellsState() {}
 	int activate();
 	int deactivate();
@@ -101,7 +100,7 @@ public:
 class DropCellsState : public ds::State {
 
 public:
-	DropCellsState(ds::StateContext* context) : ds::State(context) {}
+	DropCellsState() : ds::State() {}
 	virtual ~DropCellsState() {}
 	int activate();
 	int getMode() const {
@@ -115,8 +114,9 @@ public:
 class RefillCellsState : public ds::State {
 
 public:
-	RefillCellsState(ds::StateContext* context);
+	RefillCellsState() : ds::State() {}
 	virtual ~RefillCellsState() {}
+	void init();
 	int activate();
 	int getMode() const {
 		return BK_REFILLING;
@@ -128,21 +128,6 @@ private:
 	void moveRow(int row);
 	ds::SID _refill[GRID_SX];
 };
-
-class FillRateState : public ds::State {
-
-public:
-	FillRateState(ds::StateContext* context) : ds::State(context) {}
-	virtual ~FillRateState() {}
-	int activate();
-	int getMode() const {
-		return BK_FILLRATE;
-	}
-	const char* getName() const {
-		return "FillRateState";
-	}
-};
-
 
 // -------------------------------------------------------
 // Bucket
